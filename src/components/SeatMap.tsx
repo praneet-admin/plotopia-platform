@@ -81,7 +81,7 @@ export function SeatMap({ layout, seats, sold, held, selected, prices, onToggle,
 function Legend({ cls, label }: { cls: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`seat ${cls} pointer-events-none`} style={{ ["--seat" as string]: "14px", ["--c" as string]: "#9fb3c8" }} />
+      <span className={`seat ${cls} pointer-events-none`} style={{ ["--seat" as string]: "14px" }} />
       {label}
     </span>
   );

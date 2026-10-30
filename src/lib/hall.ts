@@ -2,7 +2,7 @@ import type { HallLayout } from "@/db/schema";
 
 /**
  * Port of the simulator's halls.js so seat ids (G7, K12...) match exactly what
- * https://praneet-admin.github.io/show/ expects in its URL hash.
+ * https://praneet-admin.github.io/plotopia/ expects in its URL hash.
  */
 export const CATEGORIES: Record<string, { name: string; css: string; pitch: number }> = {
   classic: { name: "Classic", css: "#5ec8ff", pitch: 0.56 },
@@ -56,7 +56,7 @@ export function toSimulatorJson(h: HallLayout) {
   return rest;
 }
 
-export const SIMULATOR_URL = process.env.NEXT_PUBLIC_SIMULATOR_URL ?? "https://praneet-admin.github.io/show/";
+export const SIMULATOR_URL = process.env.NEXT_PUBLIC_SIMULATOR_URL ?? "https://praneet-admin.github.io/plotopia/";
 
 export function simulatorLink(hallId: string, seatLabel: string, view: "seat" | "overview" = "seat") {
   return `${SIMULATOR_URL}#hall=${encodeURIComponent(hallId)}&seat=${encodeURIComponent(seatLabel)}&view=${view}`;

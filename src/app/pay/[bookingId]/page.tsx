@@ -11,7 +11,15 @@ import { fmtDateTime, inr } from "@/lib/format";
 import { sendBookingConfirmation } from "@/lib/notify";
 import { bookingFull } from "@/lib/queries";
 import { ExpiryRedirect } from "../../checkout/[showId]/expiry";
+import QRCode from "qrcode";
 import { PayForm } from "./pay-form";
+
+// Owner's UPI handle, same as the simulator's checkout (test mode).
+const UPI = { pa: process.env.UPI_ID ?? "nightriderpraneet@okaxis", pn: "Plotopia" };
+function upiLink(scheme: string, amount: number, note: string, ref: string) {
+  const q = new URLSearchParams({ pa: UPI.pa, pn: UPI.pn, am: amount.toFixed(2), cu: "INR", tn: note, tr: ref });
+  return `${scheme}?${q}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +35,10 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   const expiresAt = Math.min(...holds.map((h) => h.expiresAt));
   const idem = token(12);
   const failed = booking.payments.filter((p) => p.status === "failed").length;
+  const note = `${booking.show.movie.title} ${booking.seatLabels.join(",")}`.slice(0, 40);
+  const link = upiLink("upi://pay", booking.total, note, booking.id);
+  const gpay = upiLink("tez://upi/pay", booking.total, note, booking.id);
+  const qrSvg = await QRCode.toString(link, { type: "svg", margin: 0, color: { dark: "#1a1400", light: "#ffffff" }, errorCorrectionLevel: "M" });
 
   async function pay(formData: FormData) {
     "use server";
@@ -45,7 +57,7 @@ export default async function PayPage({ params, searchParams }: { params: Promis
         }
         redirect(`/tickets/${bookingId}?t=${r.booking.qrToken}&new=1`);
       }
-      redirect(`/pay/${bookingId}?error=${encodeURIComponent("Payment failed at the bank. You have not been charged. Try again or use another method.")}`);
+      redirect(`/pay/${bookingId}?error=${encodeURIComponent("Payment not confirmed. Your seats are still held: scan the QR again or tap Google Pay.")}`);
     } catch (e) {
       if (e instanceof BookingError) {
         if (e.code === "expired") redirect(`/book/${booking!.showId}?expired=1`);
@@ -67,8 +79,8 @@ export default async function PayPage({ params, searchParams }: { params: Promis
         <div className="mx-auto mt-5 max-w-lg">
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-line bg-panel-2 px-5 py-3">
-              <div className="flex items-center gap-2 text-sm font-semibold"><span className="grid h-6 w-6 place-items-center rounded-md bg-ok/20 text-ok">✓</span> ShowPay <span className="pill text-[10px]">TEST MODE</span></div>
-              <div className="text-xs text-muted">Secure · 256-bit</div>
+              <div className="flex items-center gap-2 text-sm font-semibold">Pay with UPI <span className="pill text-[10px]">TEST MODE</span></div>
+              <div className="text-xs text-muted">Ref {booking.id}</div>
             </div>
             <div className="px-5 py-4">
               <div className="flex items-baseline justify-between">
@@ -77,10 +89,10 @@ export default async function PayPage({ params, searchParams }: { params: Promis
               </div>
               {error && <div className="mt-3 rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-red-200">{error}</div>}
               {failed > 0 && !error && <div className="mt-3 text-xs text-muted">{failed} failed attempt{failed > 1 ? "s" : ""} so far. Your seats are still held.</div>}
-              <PayForm action={pay} idem={idem} total={booking.total} />
+              <PayForm action={pay} idem={idem} total={booking.total} upiId={UPI.pa} upiLink={link} gpayLink={gpay} qrSvg={qrSvg} />
             </div>
           </div>
-          <p className="mt-3 text-center text-[11px] text-muted">This is a mock gateway: no real money moves. Payments are idempotent, so a double tap never charges twice.</p>
+          <p className="mt-3 text-center text-[11px] text-muted">Test mode: there is no bank callback, so &quot;I&apos;ve paid&quot; is the confirmation. Confirmations are idempotent, so a double tap never books twice.</p>
         </div>
       </main>
     </>

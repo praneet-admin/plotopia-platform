@@ -25,7 +25,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   if (!owner) redirect(`/my?next=/tickets/${bookingId}`);
   if (b.status === "pending") redirect(`/pay/${b.id}`);
 
-  const qr = await QRCode.toString(`SHOW:${b.qrToken}`, { type: "svg", margin: 1, color: { dark: "#0b0d12", light: "#ffffff" }, errorCorrectionLevel: "M" });
+  const qr = await QRCode.toString(`PLOTOPIA:${b.qrToken}`, { type: "svg", margin: 1, color: { dark: "#0b0d12", light: "#ffffff" }, errorCorrectionLevel: "M" });
   const now = Date.now();
   const refund = refundFor(b.total, b.show.startsAt, now);
   const checkedIn = b.tickets.some((t) => t.checkedInAt);
@@ -63,7 +63,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
           <div className="overflow-hidden rounded-2xl bg-white text-[#0b0d12] shadow-2xl">
             <div className="p-5" style={{ background: `linear-gradient(135deg, ${b.show.movie.accent}, ${b.show.movie.accent2})` }}>
               <div className="flex items-start justify-between text-white">
-                <div><div className="text-[10px] font-bold uppercase tracking-[.2em] opacity-80">Show · e-ticket</div><div className="mt-1 text-2xl font-black leading-tight">{b.show.movie.title}</div><div className="text-sm opacity-90">{b.show.movie.language} · {b.show.movie.certificate} · {runtime(b.show.movie.runtimeMin)}</div></div>
+                <div><div className="text-[10px] font-bold uppercase tracking-[.2em] opacity-80">Plotopia · e-ticket</div><div className="mt-1 text-2xl font-black leading-tight">{b.show.movie.title}</div><div className="text-sm opacity-90">{b.show.movie.language} · {b.show.movie.certificate} · {runtime(b.show.movie.runtimeMin)}</div></div>
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${b.status === "confirmed" ? "bg-white/20" : "bg-black/40"}`}>{b.status}</span>
               </div>
             </div>

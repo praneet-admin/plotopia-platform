@@ -68,7 +68,7 @@ export function Scanner() {
         </div>
       </div>
       <form onSubmit={(e) => { e.preventDefault(); submit(code.trim()); setCode(""); }} className="flex gap-2">
-        <input value={code} onChange={(e) => setCode(e.target.value)} className="input font-mono uppercase" placeholder="SHW-XXXXXX" autoCapitalize="characters" />
+        <input value={code} onChange={(e) => setCode(e.target.value)} className="input font-mono uppercase" placeholder="PLT-XXXXXX" autoCapitalize="characters" />
         <button className="btn btn-primary" disabled={busy}>Check in</button>
       </form>
       {result && (

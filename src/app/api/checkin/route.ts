@@ -10,9 +10,9 @@ export async function POST(req: Request) {
   if (!me) return NextResponse.json({ error: "Sign in" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   let code = String(body.code ?? "").trim();
-  if (code.startsWith("SHOW:")) code = code.slice(5);
+  code = code.replace(/^(PLOTOPIA|SHOW):/, "");
   // Allow typing a booking id at the gate as a fallback.
-  if (/^SHW-[A-Z0-9]{6}$/i.test(code)) {
+  if (/^(PLT|SHW)-[A-Z0-9]{6}$/i.test(code)) {
     const b = await db.query.bookings.findFirst({ where: eq(schema.bookings.id, code.toUpperCase()) });
     if (!b) return NextResponse.json({ ok: false, reason: "Unknown booking id" });
     code = b.qrToken;

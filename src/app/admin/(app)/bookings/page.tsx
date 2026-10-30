@@ -36,7 +36,7 @@ export default async function BookingsAdmin({ searchParams }: { searchParams: Pr
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-bold">Bookings</h1><div className="text-sm text-muted">Search by booking id or mobile number.</div></div>
-        <form className="flex gap-2"><input name="q" defaultValue={q} className="input h-10 w-56" placeholder="SHW-… or 98400…" /><button className="btn btn-ghost btn-sm h-10">Search</button></form></div>
+        <form className="flex gap-2"><input name="q" defaultValue={q} className="input h-10 w-56" placeholder="PLT-… or 98400…" /><button className="btn btn-ghost btn-sm h-10">Search</button></form></div>
       {msg && <div className="rounded-lg border border-line bg-panel px-3 py-2 text-sm">{msg}</div>}
       <div className="card overflow-x-auto">
         <table className="table">

@@ -65,10 +65,10 @@ const RULES = [
 ];
 
 const STAFF = [
-  { email: "admin@show.demo", name: "Praneet (Owner)", role: "admin", password: "admin123" },
-  { email: "manager@show.demo", name: "Divya Raman", role: "manager", password: "manager123" },
-  { email: "counter@show.demo", name: "Suresh Kumar", role: "boxoffice", password: "counter123" },
-  { email: "gate@show.demo", name: "Priya Nair", role: "usher", password: "gate123" },
+  { email: "admin@plotopia.demo", name: "Praneet (Owner)", role: "admin", password: "admin123" },
+  { email: "manager@plotopia.demo", name: "Divya Raman", role: "manager", password: "manager123" },
+  { email: "counter@plotopia.demo", name: "Suresh Kumar", role: "boxoffice", password: "counter123" },
+  { email: "gate@plotopia.demo", name: "Priya Nair", role: "usher", password: "gate123" },
 ];
 
 const CUSTOMER_NAMES = ["Arjun Menon", "Keerthana S", "Vikram Iyer", "Meera Krishnan", "Rahul Das", "Anitha Raj", "Sanjay P", "Lakshmi V", "Karthik B", "Nithya M", "Harish R", "Pooja G"];

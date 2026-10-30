@@ -18,7 +18,7 @@ export default async function StaffLogin({ searchParams }: { searchParams: Promi
     await staffLogin(u.id);
     redirect(u.role === "usher" ? "/admin/scan" : "/admin");
   }
-  const demo = [["admin@show.demo", "admin123", "Owner"], ["manager@show.demo", "manager123", "Manager"], ["counter@show.demo", "counter123", "Box office"], ["gate@show.demo", "gate123", "Gate usher"]];
+  const demo = [["admin@plotopia.demo", "admin123", "Owner"], ["manager@plotopia.demo", "manager123", "Manager"], ["counter@plotopia.demo", "counter123", "Box office"], ["gate@plotopia.demo", "gate123", "Gate usher"]];
   return (
     <main className="container-x flex min-h-screen flex-col items-center justify-center py-10">
       <Logo className="mb-6" />
@@ -27,7 +27,7 @@ export default async function StaffLogin({ searchParams }: { searchParams: Promi
         <p className="mt-1 text-sm text-muted">PVR Phoenix MarketCity · back office</p>
         {error && <div className="mt-3 rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-red-200">Wrong email or password.</div>}
         <div className="mt-4 space-y-3">
-          <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" className="input" defaultValue="admin@show.demo" autoComplete="username" /></div>
+          <div><label className="label" htmlFor="email">Email</label><input id="email" name="email" type="email" className="input" defaultValue="admin@plotopia.demo" autoComplete="username" /></div>
           <div><label className="label" htmlFor="password">Password</label><input id="password" name="password" type="password" className="input" defaultValue="admin123" autoComplete="current-password" /></div>
           <button className="btn btn-primary w-full">Sign in</button>
         </div>

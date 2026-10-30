@@ -12,7 +12,7 @@ export async function sendBookingConfirmation(b: B, origin: string) {
   const now = Date.now();
   const rows = [
     { id: uuid(), channel: "whatsapp", to: `+91 ${b.customer.phone}`, subject: `Tickets confirmed · ${b.id}`, body, bookingId: b.id, createdAt: now },
-    { id: uuid(), channel: "sms", to: `+91 ${b.customer.phone}`, subject: `Show ${b.id}`, body: `Show: ${b.show.movie.title}, ${fmtDateTime(b.show.startsAt)}, seats ${b.seatLabels.join(",")}. Ticket: ${link}`, bookingId: b.id, createdAt: now },
+    { id: uuid(), channel: "sms", to: `+91 ${b.customer.phone}`, subject: `Plotopia ${b.id}`, body: `Plotopia: ${b.show.movie.title}, ${fmtDateTime(b.show.startsAt)}, seats ${b.seatLabels.join(",")}. Ticket: ${link}`, bookingId: b.id, createdAt: now },
   ];
   if (b.customer.email) rows.push({ id: uuid(), channel: "email", to: b.customer.email, subject: `Your tickets for ${b.show.movie.title} · ${b.id}`, body, bookingId: b.id, createdAt: now });
   await db.insert(schema.notifications).values(rows);

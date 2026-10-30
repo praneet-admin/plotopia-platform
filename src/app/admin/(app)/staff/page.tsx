@@ -49,7 +49,7 @@ export default async function StaffAdmin({ searchParams }: { searchParams: Promi
             <td className="text-right">{u.id !== me.id && <form action={toggle}><input type="hidden" name="id" value={u.id} /><button className="btn btn-ghost btn-sm">{u.active ? "Deactivate" : "Reactivate"}</button></form>}</td></tr>
         ))}</tbody></table></div>
       <form action={add} className="card grid gap-3 p-4 sm:grid-cols-5">
-        <input name="name" placeholder="Name" className="input" required /><input name="email" type="email" placeholder="email@show.demo" className="input" required />
+        <input name="name" placeholder="Name" className="input" required /><input name="email" type="email" placeholder="email@plotopia.demo" className="input" required />
         <select name="role" className="input capitalize">{ROLES.map((r) => <option key={r} value={r}>{r}</option>)}</select>
         <input name="password" type="password" placeholder="Password (6+)" className="input" required minLength={6} autoComplete="new-password" />
         <button className="btn btn-primary">Add staff</button>

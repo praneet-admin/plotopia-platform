@@ -90,7 +90,7 @@ export const customers = sqliteTable("customers", {
 export const bookings = sqliteTable(
   "bookings",
   {
-    id: text("id").primaryKey(), // SHW-XXXXXX
+    id: text("id").primaryKey(), // PLT-XXXXXX
     showId: text("show_id").notNull().references(() => shows.id),
     customerId: text("customer_id").references(() => customers.id),
     holdGroup: text("hold_group"),

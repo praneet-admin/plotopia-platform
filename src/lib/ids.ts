@@ -9,5 +9,5 @@ export function shortCode(len = 6) {
   for (let i = 0; i < len; i++) s += ALPHABET[b[i] % ALPHABET.length];
   return s;
 }
-export const bookingCode = () => `SHW-${shortCode(6)}`;
+export const bookingCode = () => `PLT-${shortCode(6)}`;
 export const token = (bytes = 24) => randomBytes(bytes).toString("base64url");

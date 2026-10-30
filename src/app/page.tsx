@@ -15,7 +15,7 @@ export default async function Home() {
         <section className="fade-up pt-8 sm:pt-12">
           <p className="text-xs font-semibold uppercase tracking-[.2em] text-brand">PVR Phoenix MarketCity · Chennai</p>
           <h1 className="mt-2 max-w-2xl text-3xl font-black leading-tight tracking-tight sm:text-5xl">
-            Pick a seat. <span className="bg-gradient-to-r from-brand to-brand-2 bg-clip-text text-transparent">See the screen</span> before you pay.
+            Pick a seat. <span className="text-brand">See the screen</span> before you pay.
           </h1>
           <p className="mt-3 max-w-xl text-sm text-muted sm:text-base">Every seat on the map opens a 3D view from exactly that spot, scored for sightline, so you never end up in the neck-ache row again.</p>
         </section>
