@@ -1,5 +1,5 @@
 import { and, eq, gt, inArray, lt, ne, sql } from "drizzle-orm";
-import { db, schema } from "@/db";
+import { db, errorText, isUniqueViolation, schema, writeTx } from "@/db";
 import { bookingCode, token, uuid } from "./ids";
 import { CONVENIENCE_FEE_PER_SEAT, refundFor } from "./pricing";
 
@@ -39,8 +39,7 @@ export async function holdSeats(showId: string, seatIds: string[], holdGroup: st
   const uniq = [...new Set(seatIds)];
   const now = Date.now();
   try {
-    return await db.transaction(
-      async (tx) => {
+    return await writeTx(async (tx) => {
         const show = await tx.query.shows.findFirst({ where: eq(schema.shows.id, showId) });
         if (!show || show.status !== "scheduled") throw new BookingError("Show is not open for booking", "show_closed");
         if (show.startsAt < now - 20 * 60_000) throw new BookingError("Booking for this show has closed", "show_closed");
@@ -59,12 +58,10 @@ export async function holdSeats(showId: string, seatIds: string[], holdGroup: st
         const expiresAt = now + HOLD_MS;
         await tx.insert(schema.seatHolds).values(uniq.map((seatId) => ({ id: uuid(), showId, seatId, holdGroup, expiresAt, createdAt: now })));
         return { expiresAt, seats: uniq };
-      },
-      { behavior: "immediate" },
-    );
+    });
   } catch (e) {
     if (e instanceof BookingError) throw e;
-    if (String(e).includes("UNIQUE")) throw new BookingError("Some seats were just taken", "taken", uniq);
+    if (isUniqueViolation(e)) throw new BookingError("Some seats were just taken", "taken", uniq);
     throw e;
   }
 }
@@ -126,8 +123,7 @@ export async function settlePayment(opts: { bookingId: string; idempotencyKey: s
     return { payment: prior, booking: b!, replayed: true };
   }
   try {
-    return await db.transaction(
-      async (tx) => {
+    return await writeTx(async (tx) => {
         const booking = await tx.query.bookings.findFirst({ where: eq(schema.bookings.id, opts.bookingId) });
         if (!booking) throw new BookingError("Booking not found", "not_found");
         if (booking.status === "confirmed") {
@@ -151,17 +147,15 @@ export async function settlePayment(opts: { bookingId: string; idempotencyKey: s
         await tx.delete(schema.seatHolds).where(eq(schema.seatHolds.holdGroup, booking.holdGroup!));
         const [updated] = await tx.update(schema.bookings).set({ status: "confirmed", confirmedAt: now }).where(eq(schema.bookings.id, booking.id)).returning();
         return { payment, booking: updated, replayed: false };
-      },
-      { behavior: "immediate" },
-    );
+    });
   } catch (e) {
     if (e instanceof BookingError) throw e;
-    if (String(e).includes("UNIQUE") && String(e).includes("idempotency")) {
+    if (isUniqueViolation(e) && errorText(e).includes("idempotency")) {
       const prior2 = await db.query.payments.findFirst({ where: eq(schema.payments.idempotencyKey, opts.idempotencyKey) });
       const b = await db.query.bookings.findFirst({ where: eq(schema.bookings.id, prior2!.bookingId) });
       return { payment: prior2!, booking: b!, replayed: true };
     }
-    if (String(e).includes("UNIQUE")) throw new BookingError("A seat in this booking was sold to someone else. Nothing was charged.", "taken");
+    if (isUniqueViolation(e)) throw new BookingError("A seat in this booking was sold to someone else. Nothing was charged.", "taken");
     throw e;
   }
 }
@@ -169,8 +163,7 @@ export async function settlePayment(opts: { bookingId: string; idempotencyKey: s
 /** Cancel a confirmed booking under the refund policy; frees the seats. */
 export async function cancelBooking(bookingId: string, opts: { force?: boolean } = {}) {
   const now = Date.now();
-  return db.transaction(
-    async (tx) => {
+  return writeTx(async (tx) => {
       const booking = await tx.query.bookings.findFirst({ where: eq(schema.bookings.id, bookingId) });
       if (!booking) throw new BookingError("Booking not found", "not_found");
       if (booking.status !== "confirmed") throw new BookingError("Only confirmed bookings can be cancelled", "not_cancellable");
@@ -183,9 +176,7 @@ export async function cancelBooking(bookingId: string, opts: { force?: boolean }
       if (refund.amount > 0)
         await tx.insert(schema.payments).values({ id: uuid(), bookingId, idempotencyKey: `refund:${bookingId}`, amount: -refund.amount, method: "refund", status: "refunded", gatewayRef: `rf_${token(8)}`, createdAt: now });
       return refund;
-    },
-    { behavior: "immediate" },
-  );
+  });
 }
 
 /** Gate check-in by QR token. */

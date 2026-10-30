@@ -89,3 +89,9 @@ select.input { appearance: none; }
 .fade-up { animation: fade-up .35s ease both; }
 .scroll-x { overflow-x: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
 .ticket-notch { mask: radial-gradient(14px at 0 50%, transparent 98%, #000) -14px 50% / 100% 100% no-repeat, radial-gradient(14px at 100% 50%, transparent 98%, #000) 14px 50% / 100% 100% no-repeat; mask-composite: intersect; }
+
+@media print {
+  body { background: #fff !important; color: #000; }
+  header, footer, form, details, .btn, nav { display: none !important; }
+  main { padding: 0; }
+}

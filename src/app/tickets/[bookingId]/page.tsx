@@ -11,6 +11,7 @@ import { refundFor } from "@/lib/pricing";
 import { bookingFull } from "@/lib/queries";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { PrintButton } from "./print";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
         {sp.new && (
           <div className="fade-up mx-auto mt-6 max-w-md rounded-xl border border-ok/40 bg-ok/10 px-4 py-3 text-sm text-green-100">
             <div className="font-semibold">Booking confirmed 🎉</div>
-            <div className="mt-0.5 text-xs opacity-90">Sent to {b.customer ? `+91 ${b.customer.phone}` : "you"} on WhatsApp and SMS{b.customer?.email ? ` and to ${b.customer.email}` : ""}.</div>
+            <div className="mt-0.5 text-xs opacity-90">{b.customer ? `Sent to +91 ${b.customer.phone} on WhatsApp and SMS${b.customer.email ? ` and to ${b.customer.email}` : ""}.` : "Walk-in sale: print the ticket for the customer."}</div>
           </div>
         )}
         {sp.cancelled !== undefined && <div className="mx-auto mt-6 max-w-md rounded-xl border border-line bg-panel px-4 py-3 text-sm">Booking cancelled. {Number(sp.cancelled) > 0 ? `Refund of ${inr(Number(sp.cancelled))} is on its way (5-7 days).` : "No refund applies this close to the show."}</div>}
@@ -101,6 +102,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
             <a className="btn btn-ghost btn-sm" href={`https://wa.me/?text=${waText}`} target="_blank" rel="noreferrer">Share on WhatsApp</a>
             <a className="btn btn-ghost btn-sm" href={`/tickets/${b.id}/calendar.ics?t=${b.qrToken}`}>Add to calendar</a>
             <Link className="btn btn-ghost btn-sm" href="/my">My bookings</Link>
+            <PrintButton />
           </div>
 
           {canCancel && (

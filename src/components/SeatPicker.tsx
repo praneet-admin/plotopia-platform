@@ -55,7 +55,7 @@ export function SeatPicker({ showId, hallId, layout, seats, prices, initial, max
   const proceed = async () => {
     setBusy(true); setError(null);
     try {
-      if (onProceed) { await onProceed(labels); return; }
+      if (onProceed) { try { await onProceed(labels); } catch (e) { setError(e instanceof Error ? e.message : "Could not hold seats"); await refresh(); } return; }
       const r = await fetch(`/api/shows/${showId}/hold`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ seats: labels }) });
       const j = await r.json();
       if (!r.ok) {
