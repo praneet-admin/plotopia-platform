@@ -46,7 +46,6 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
     }
   }
 
-  const statusTone = b.status === "confirmed" ? "bg-ok/15 text-ok" : "bg-bad/15 text-bad";
   return (
     <>
       <Header />

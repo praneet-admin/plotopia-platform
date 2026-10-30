@@ -23,9 +23,6 @@ export default async function MovieEdit({ params }: { params: Promise<{ id: stri
     else await db.update(schema.movies).set(row).where(eq(schema.movies.id, id));
     redirect("/admin/movies");
   }
-  const F = ({ name, label, def, type = "text", span }: { name: string; label: string; def?: string | number; type?: string; span?: boolean }) => (
-    <div className={span ? "sm:col-span-2" : ""}><label className="label" htmlFor={name}>{label}</label><input id={name} name={name} type={type} defaultValue={def} className="input" /></div>
-  );
   return (
     <div className="max-w-3xl space-y-5">
       <h1 className="text-2xl font-bold">{isNew ? "Add movie" : m!.title}</h1>
@@ -51,5 +48,11 @@ export default async function MovieEdit({ params }: { params: Promise<{ id: stri
         <div className="sm:col-span-2"><button className="btn btn-primary">{isNew ? "Add movie" : "Save changes"}</button></div>
       </form>
     </div>
+  );
+}
+
+function F({ name, label, def, type = "text", span }: { name: string; label: string; def?: string | number; type?: string; span?: boolean }) {
+  return (
+    <div className={span ? "sm:col-span-2" : ""}><label className="label" htmlFor={name}>{label}</label><input id={name} name={name} type={type} defaultValue={def} className="input" /></div>
   );
 }

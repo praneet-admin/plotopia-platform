@@ -11,8 +11,15 @@ type Status = { sold: string[]; held: string[]; mine: string[]; myExpiresAt: num
 export function SeatPicker({ showId, hallId, layout, seats, prices, initial, maxSeats, mode = "online", onProceed }: { showId: string; hallId: string; layout: HallLayout; seats: SeatLite[]; prices: Record<string, number>; initial: Status; maxSeats: number; mode?: "online" | "counter"; onProceed?: (labels: string[]) => Promise<void> }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>(initial);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(initial.mine));
+  const [rawSelected, setSelected] = useState<Set<string>>(() => new Set(initial.mine));
   const [busy, setBusy] = useState(false);
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const apply = () => setCompact(mq.matches);
+    apply(); mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const catOf = useMemo(() => new Map(seats.map((s) => [s.label, s.category])), [seats]);
 
@@ -29,23 +36,16 @@ export function SeatPicker({ showId, hallId, layout, seats, prices, initial, max
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", vis); };
   }, [refresh]);
 
-  // If someone else grabbed a seat I had selected (but not yet held), drop it.
-  useEffect(() => {
-    setSelected((prev) => {
-      const next = new Set([...prev].filter((l) => !status.sold.includes(l) && !status.held.includes(l)));
-      return next.size === prev.size ? prev : next;
-    });
-  }, [status]);
+  // If someone else grabbed a seat I had selected (but not yet held), it drops out of the selection.
+  const selected = useMemo(() => new Set([...rawSelected].filter((l) => !status.sold.includes(l) && !status.held.includes(l))), [rawSelected, status]);
 
   const toggle = (label: string) => {
     setError(null);
-    setSelected((prev) => {
-      const n = new Set(prev);
-      if (n.has(label)) n.delete(label);
-      else if (n.size >= maxSeats) { setError(`You can book up to ${maxSeats} seats at a time.`); return prev; }
-      else n.add(label);
-      return n;
-    });
+    const n = new Set(selected);
+    if (n.has(label)) n.delete(label);
+    else if (n.size >= maxSeats) { setError(`You can book up to ${maxSeats} seats at a time.`); return; }
+    else n.add(label);
+    setSelected(n);
   };
 
   const labels = useMemo(() => [...selected].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), [selected]);
@@ -70,7 +70,7 @@ export function SeatPicker({ showId, hallId, layout, seats, prices, initial, max
   const sheet = useRef<HTMLDivElement>(null);
   return (
     <div className="pb-40">
-      <SeatMap layout={layout} seats={seats} sold={new Set(status.sold)} held={new Set(status.held)} selected={selected} prices={prices} onToggle={toggle} />
+      <SeatMap layout={layout} seats={seats} sold={new Set(status.sold)} held={new Set(status.held)} selected={selected} prices={prices} onToggle={toggle} compact={compact} />
 
       <div ref={sheet} className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 backdrop-blur" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="container-x py-3">
@@ -93,7 +93,7 @@ export function SeatPicker({ showId, hallId, layout, seats, prices, initial, max
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               {labels.length === 0 ? (
-                <div className="text-sm text-muted">Tap seats to select. Tap <span className="text-brand">View</span> to see the screen from that seat.</div>
+                <div className="text-sm text-muted">Tap seats to select.<span className="hidden sm:inline"> Tap <span className="text-brand">View</span> to see the screen from that seat.</span></div>
               ) : (
                 <>
                   <div className="num text-lg font-bold">{inr(subtotal + fee)}</div>

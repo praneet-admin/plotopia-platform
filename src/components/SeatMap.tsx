@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { HallLayout } from "@/db/schema";
 import { CATEGORIES } from "@/lib/hall";
 
@@ -9,26 +9,32 @@ export function SeatMap({ layout, seats, sold, held, selected, prices, onToggle,
   const rows = useMemo(() => {
     const m = new Map<string, SeatLite[]>();
     for (const s of seats) m.set(s.row, [...(m.get(s.row) ?? []), s]);
-    return [...m.entries()].sort((a, b) => a[1][0].rowIndex - b[1][0].rowIndex);
+    const sorted = [...m.entries()].sort((a, b) => a[1][0].rowIndex - b[1][0].rowIndex);
+    // A category header goes above the first row of each band.
+    return sorted.map(([row, list], i) => ({ row, list, header: i === 0 || sorted[i - 1][1][0].category !== list[0].category }));
   }, [seats]);
-  const maxPerRow = Math.max(...rows.map(([, r]) => r.length));
-  const seatPx = compact ? 22 : 26;
+  const maxPerRow = Math.max(...rows.map((r) => r.list.length));
+  const seatPx = compact ? 20 : 26;
   const gap = 5;
   const minW = maxPerRow * (seatPx + gap) + 60 + 40;
+  const scroller = useRef<HTMLDivElement>(null);
+  // Start centred on the screen rather than at row A seat 1 on narrow phones.
+  useEffect(() => {
+    const el = scroller.current;
+    if (el) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+  }, [minW]);
 
-  let lastCat = "";
+  void layout;
   return (
-    <div className="scroll-x -mx-4 px-4 sm:mx-0 sm:px-0" style={{ ["--seat" as string]: `${seatPx}px` }}>
+    <div ref={scroller} className="scroll-x -mx-4 px-4 sm:mx-0 sm:px-0" style={{ ["--seat" as string]: `${seatPx}px` }}>
       <div className="mx-auto" style={{ minWidth: minW, width: "fit-content" }}>
         <div className="mb-6 px-10">
           <div className="screen-glow" />
           <div className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[.3em] text-muted">Screen this way</div>
         </div>
         <div className="flex flex-col gap-[5px]">
-          {rows.map(([row, list]) => {
+          {rows.map(({ row, list, header }) => {
             const cat = list[0].category;
-            const header = cat !== lastCat;
-            lastCat = cat;
             const css = CATEGORIES[cat]?.css ?? "#fff";
             return (
               <div key={row}>

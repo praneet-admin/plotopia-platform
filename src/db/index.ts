@@ -1,9 +1,11 @@
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
+import { mkdirSync } from "node:fs";
 
 const url = process.env.DATABASE_URL ?? "file:data/show.db";
 const authToken = process.env.DATABASE_AUTH_TOKEN;
+if (url.startsWith("file:")) { try { mkdirSync(url.slice(5).replace(/[^/]*$/, "") || ".", { recursive: true }); } catch {} }
 
 const globalForDb = globalThis as unknown as { __showClient?: ReturnType<typeof createClient> };
 // `timeout` is SQLite's busy timeout for file databases: concurrent write
