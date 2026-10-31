@@ -1,22 +1,19 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { Footer, Header } from "@/components/Header";
 import { Poster } from "@/components/Poster";
 import { currentCustomer } from "@/lib/auth";
 import { browseMovies, genreTokens, listCinemas } from "@/lib/browse";
 import { dayKey, fmtTime, inr, runtime } from "@/lib/format";
-import { VISITED_COOKIE } from "@/lib/portal";
 import { showsForMovieOnDay } from "@/lib/queries";
+import { TheatreSelect } from "@/components/TheatreSelect";
 import { simulatorShowLink, siteOrigin } from "@/lib/simulator";
 
 export const dynamic = "force-dynamic";
 
-type SP = { cinema?: string; genre?: string; lang?: string };
+type SP = { cinema?: string; genre?: string; lang?: string; q?: string };
 
 export default async function Home({ searchParams }: { searchParams: Promise<SP> }) {
-  const [customer, jar] = await Promise.all([currentCustomer(), cookies()]);
-  if (!customer && !jar.get(VISITED_COOKIE)) redirect("/portal");
+  const customer = await currentCustomer();
   const sp = await searchParams;
   const today = dayKey(Date.now());
   const now = Date.now();
@@ -26,8 +23,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
   const all = await browseMovies({ day: today });
   const genres = genreTokens(all);
   const languages = [...new Set(all.map((m) => m.language))].sort();
-  const movies = await browseMovies({ day: today, cinemaId: cinema?.id, genre: sp.genre, language: sp.lang });
-  const filtered = !!(cinema || sp.genre || sp.lang);
+  const q = (sp.q ?? "").trim();
+  const movies = (await browseMovies({ day: today, cinemaId: cinema?.id, genre: sp.genre, language: sp.lang })).filter((m) => !q || m.title.toLowerCase().includes(q.toLowerCase()) || m.cast.some((c) => c.toLowerCase().includes(q.toLowerCase())));
+  const filtered = !!(cinema || sp.genre || sp.lang || q);
   const href = (patch: Partial<SP>) => {
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries({ ...sp, ...patch })) if (v) p.set(k, v);
@@ -46,6 +44,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
       <div className="mt-2.5 text-[15px] font-semibold leading-tight">{m.title}</div>
       <div className="mt-0.5 text-xs text-muted">{m.genre.replace(/ · /g, ", ")} · {runtime(m.runtimeMin)}</div>
       {!cinema && m.cinemaIds.length > 0 && <div className="mt-0.5 truncate text-xs text-muted">{m.cinemaIds.map(short).join(", ")}</div>}
+      <div className="mt-2 text-sm font-semibold text-brand group-hover:underline">Showtimes</div>
     </Link>
   );
 
@@ -67,7 +66,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
                   <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-text/90">{featured.synopsis}</p>
                   {featuredShows.length > 0 ? (
                     <div className="mt-5">
-                      <div className="text-sm text-muted">Showtimes today</div>
+                      <div className="text-sm text-muted">Showtimes today. Tap a time to pick your seat in the 3D hall.</div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {featuredShows.slice(0, 6).map((s) => (
                           <a key={s.id} href={simulatorShowLink({ ...s, movie: featured }, origin)} className="showtime">
@@ -89,25 +88,33 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
           </section>
         )}
 
-        {/* Filters */}
+        {/* Find a film */}
         <section className="container-x mt-10">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <div className="rail -mx-4 px-4 sm:mx-0 sm:px-0" aria-label="Theatre">
-              <Link href={href({ cinema: undefined })} className={`chip ${!cinema ? "on" : ""}`}>All theatres</Link>
-              {cinemas.map((c) => <Link key={c.id} href={href({ cinema: c.id })} className={`chip ${cinema?.id === c.id ? "on" : ""}`}>{c.name}</Link>)}
+          <form className="relative" role="search">
+            <svg className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input name="q" defaultValue={q} className="search" placeholder="Search films or actors" aria-label="Search films" />
+            {cinema && <input type="hidden" name="cinema" value={cinema.id} />}
+          </form>
+          <div className="mt-4 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
+            <label className="text-sm text-muted" htmlFor="theatre">Theatre</label>
+            <TheatreSelect id="theatre" cinemas={cinemas} value={cinema?.id ?? ""} params={{ genre: sp.genre, lang: sp.lang, q }} />
+            <span className="text-sm text-muted">Genre</span>
+            <div className="rail -mx-4 px-4 sm:mx-0 sm:px-0" aria-label="Genre">
+              <Link href={href({ genre: undefined })} className={`chip ${!sp.genre ? "on" : ""}`}>All</Link>
+              {genres.map((g) => <Link key={g} href={href({ genre: sp.genre === g ? undefined : g })} className={`chip ${sp.genre === g ? "on" : ""}`}>{g}</Link>)}
             </div>
-          </div>
-          <div className="rail -mx-4 mt-3 px-4 sm:mx-0 sm:px-0" aria-label="Genre and language">
-            {genres.map((g) => <Link key={g} href={href({ genre: sp.genre === g ? undefined : g })} className={`chip ${sp.genre === g ? "on" : ""}`}>{g}</Link>)}
-            <span className="my-2 w-px bg-line" />
-            {languages.map((l) => <Link key={l} href={href({ lang: sp.lang === l ? undefined : l })} className={`chip ${sp.lang === l ? "on" : ""}`}>{l}</Link>)}
+            <span className="text-sm text-muted">Language</span>
+            <div className="rail -mx-4 px-4 sm:mx-0 sm:px-0" aria-label="Language">
+              <Link href={href({ lang: undefined })} className={`chip ${!sp.lang ? "on" : ""}`}>All</Link>
+              {languages.map((l) => <Link key={l} href={href({ lang: sp.lang === l ? undefined : l })} className={`chip ${sp.lang === l ? "on" : ""}`}>{l}</Link>)}
+            </div>
           </div>
         </section>
 
         {/* Now showing rail */}
         <section className="container-x mt-8">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-xl font-bold tracking-tight">{filtered ? [sp.genre, sp.lang, cinema?.name].filter(Boolean).join(", ") : "Now showing"}</h2>
+            <h2 className="text-xl font-bold tracking-tight">{filtered ? [q && `“${q}”`, sp.genre, sp.lang, cinema?.name].filter(Boolean).join(", ") : "Now showing"}</h2>
             <span className="text-sm text-muted">{movies.length} film{movies.length === 1 ? "" : "s"} today{filtered && <> · <Link href="/" className="text-text underline-offset-2 hover:underline">clear</Link></>}</span>
           </div>
           {movies.length === 0 ? (

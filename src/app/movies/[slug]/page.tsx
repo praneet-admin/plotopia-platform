@@ -43,13 +43,14 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
           <div className="beam" aria-hidden />
           <div className="container-x relative pt-6 sm:pt-10">
             <Link href="/" className="text-sm text-muted hover:text-text">All movies</Link>
-            <div className="screen mt-3 grid gap-6 p-5 sm:grid-cols-[200px_1fr] sm:gap-8 sm:p-8 lg:grid-cols-[240px_1fr]">
-              <Poster movie={movie} className="w-[150px] sm:w-auto" size="md" />
+            <div className="screen mt-3 grid gap-5 p-5 sm:grid-cols-[150px_1fr] sm:gap-7 sm:p-7 lg:grid-cols-[180px_1fr]">
+              <Poster movie={movie} className="w-[120px] sm:w-auto" size="sm" />
               <div className="min-w-0">
-                <h1 className="text-[clamp(34px,6vw,64px)] font-extrabold leading-[0.95] tracking-[-0.035em]">{movie.title}</h1>
+                <h1 className="text-[clamp(30px,5vw,52px)] font-extrabold leading-[0.95] tracking-[-0.035em]">{movie.title}</h1>
                 <p className="mt-3 text-sm text-muted">{movie.language}, {movie.certificate}, {runtime(movie.runtimeMin)}. {movie.genre.replace(/ · /g, " and ")}. Rated {movie.rating.toFixed(1)}.</p>
-                <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-text/90">{movie.synopsis}</p>
-                <p className="mt-3 max-w-[62ch] text-sm text-muted">Directed by {movie.director}. With {movie.cast.join(", ")}.</p>
+                <a href="#showtimes" className="btn btn-primary mt-4">Book tickets</a>
+                <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-text/90">{movie.synopsis}</p>
+                <p className="mt-2 max-w-[62ch] text-sm text-muted">Directed by {movie.director}. With {movie.cast.join(", ")}.</p>
               </div>
             </div>
             <div className="seat-row mx-6 mt-3 sm:mx-10" aria-hidden />
@@ -57,8 +58,9 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
           </div>
         </section>
 
-        <section className="container-x mt-8">
+        <section id="showtimes" className="container-x mt-8 scroll-mt-20">
           <h2 className="text-xl font-bold tracking-tight">Showtimes</h2>
+          <p className="mt-1 text-sm text-muted">Pick a day and a time. The time opens the 3D hall where you choose your seat.</p>
           <div className="rail -mx-4 mt-3 px-4 sm:mx-0 sm:px-0" aria-label="Day">
             {days.map((d) => {
               const ms = dayStart(d);
@@ -101,8 +103,8 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
                               const tone = fillTone(pct);
                               const past = s.startsAt < now - 20 * 60_000;
                               const soldOut = s.sold >= screen.seatCount;
-                              const inner = (<><b>{fmtTime(s.startsAt)}</b><small className={past ? "text-muted" : tone.cls}>{past ? "Started" : tone.label}</small></>);
-                              return past || soldOut ? <span key={s.id} className="showtime opacity-50">{inner}</span> : <a key={s.id} href={simulatorShowLink({ ...s, movie }, origin)} className="showtime">{inner}</a>;
+                              const inner = (<><b>{fmtTime(s.startsAt)}</b><small className={past || soldOut ? "" : tone.cls}>{past ? "Started" : soldOut ? "Sold out" : tone.label}</small></>);
+                              return past || soldOut ? <span key={s.id} className="showtime off" aria-disabled="true">{inner}</span> : <a key={s.id} href={simulatorShowLink({ ...s, movie }, origin)} className="showtime">{inner}</a>;
                             })}
                           </div>
                         </div>
