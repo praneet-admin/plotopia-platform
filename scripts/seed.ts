@@ -11,7 +11,13 @@ import type { HallLayout } from "../src/db/schema";
 const now = Date.now();
 const today = dayKey(now);
 
-const CINEMA = { id: "pvr-phoenix", name: "PVR Phoenix MarketCity", city: "Chennai", address: "Phoenix MarketCity, Velachery Main Rd, Chennai 600042" };
+const CINEMAS = [
+  { id: "pvr-phoenix", name: "PVR Phoenix MarketCity", city: "Chennai", address: "Phoenix MarketCity, Velachery Main Rd, Chennai 600042" },
+  { id: "sathyam", name: "Sathyam Cinemas", city: "Chennai", address: "8 Thiru Vi Ka Rd, Royapettah, Chennai 600014" },
+  { id: "luxe", name: "Luxe Cinemas", city: "Chennai", address: "Phoenix MarketCity, Velachery, Chennai 600042" },
+  { id: "inox-citi", name: "INOX Chennai Citi Centre", city: "Chennai", address: "Dr Radha Krishnan Salai, Mylapore, Chennai 600004" },
+];
+const CINEMA = CINEMAS[0];
 
 const HALLS: HallLayout[] = [
   {
@@ -37,6 +43,17 @@ const HALLS: HallLayout[] = [
   },
 ];
 
+type HallDef = HallLayout & { cinemaId: string; simId: string };
+const EXTRA_HALLS: HallDef[] = [
+  { ...HALLS[1], id: "sathyam-main", name: "Sathyam · Main", venue: "Sathyam Cinemas", cinemaId: "sathyam", simId: "audi1", basePrices: { classic: 190, prime: 260, recliner: 520 } },
+  { ...HALLS[0], id: "sathyam-six", name: "Six Degrees", venue: "Sathyam Cinemas", cinemaId: "sathyam", simId: "audi3", basePrices: { classic: 170, prime: 230, recliner: 480 } },
+  { ...HALLS[2], id: "luxe-laser", name: "Luxe · Laser", venue: "Luxe Cinemas", cinemaId: "luxe", simId: "imax", basePrices: { classic: 300, prime: 420, recliner: 790 } },
+  { ...HALLS[0], id: "luxe-2", name: "Luxe · Screen 2", venue: "Luxe Cinemas", cinemaId: "luxe", simId: "audi3", basePrices: { classic: 220, prime: 300, recliner: 650 } },
+  { ...HALLS[1], id: "inox-1", name: "INOX · Screen 1", venue: "INOX Citi Centre", cinemaId: "inox-citi", simId: "audi1", basePrices: { classic: 180, prime: 250, recliner: 500 } },
+  { ...HALLS[0], id: "inox-3", name: "INOX · Screen 3", venue: "INOX Citi Centre", cinemaId: "inox-citi", simId: "audi3", basePrices: { classic: 160, prime: 220, recliner: 450 } },
+];
+const ALL_HALLS: HallDef[] = [...HALLS.map((h) => ({ ...h, cinemaId: "pvr-phoenix", simId: h.id })), ...EXTRA_HALLS];
+
 const MOVIES = [
   {
     id: "meiyazhagan", slug: "meiyazhagan", title: "Meiyazhagan", language: "Tamil", certificate: "U", runtimeMin: 177, genre: "Drama · Family",
@@ -57,6 +74,16 @@ const MOVIES = [
     synopsis: "IMAX re-release. As Earth's crops fail, a former pilot joins a last-ditch mission through a wormhole to find humanity a new home. Best seen on the biggest screen in the city.",
   },
 ];
+
+const MORE_MOVIES = [
+  { id: "lucky-baskhar", slug: "lucky-baskhar", title: "Lucky Baskhar", language: "Telugu", certificate: "U/A", runtimeMin: 150, genre: "Thriller · Drama", director: "Venky Atluri", cast: ["Dulquer Salmaan", "Meenakshi Chaudhary"], releaseDate: "2024-10-31", rating: 7.9, accent: "#5a3e1b", accent2: "#f0c75e", synopsis: "A bank cashier drowning in debt discovers a loophole that could make him rich, if nobody notices. A sharp, satisfying con drama set in 1990s Bombay." },
+  { id: "vettaiyan", slug: "vettaiyan", title: "Vettaiyan", language: "Tamil", certificate: "U/A", runtimeMin: 163, genre: "Action · Thriller", director: "T. J. Gnanavel", cast: ["Rajinikanth", "Amitabh Bachchan", "Fahadh Faasil"], releaseDate: "2024-10-10", rating: 7.1, accent: "#2a2a2a", accent2: "#d93b3b", synopsis: "A celebrated encounter specialist is forced to question everything when one of his cases turns out to be wrong." },
+  { id: "dune-part-two", slug: "dune-part-two", title: "Dune: Part Two", language: "English", certificate: "U/A", runtimeMin: 166, genre: "Sci-Fi · Epic", director: "Denis Villeneuve", cast: ["Timothée Chalamet", "Zendaya", "Rebecca Ferguson"], releaseDate: "2024-03-01", rating: 8.5, accent: "#7a4a1e", accent2: "#f2b263", synopsis: "Paul Atreides unites with the Fremen to take revenge against the conspirators who destroyed his family. Re-release on the largest screens." },
+  { id: "inside-out-2", slug: "inside-out-2", title: "Inside Out 2", language: "English", certificate: "U", runtimeMin: 96, genre: "Animation · Family", director: "Kelsey Mann", cast: ["Amy Poehler", "Maya Hawke", "Phyllis Smith"], releaseDate: "2024-06-14", rating: 7.6, accent: "#1f6fb2", accent2: "#ffb347", synopsis: "Riley turns thirteen and Headquarters gets a surprise visit from Anxiety, Envy, Ennui and Embarrassment. A warm, funny family film." },
+  { id: "manjummel-boys", slug: "manjummel-boys", title: "Manjummel Boys", language: "Malayalam", certificate: "U/A", runtimeMin: 135, genre: "Survival · Drama", director: "Chidambaram", cast: ["Soubin Shahir", "Sreenath Bhasi", "Balu Varghese"], releaseDate: "2024-02-22", rating: 8.3, accent: "#1d3b2a", accent2: "#9fe3b5", synopsis: "A group of friends on a trip to Kodaikanal descend into the Guna Caves, and one of them falls into a pit nobody has come back from." },
+  { id: "stree-2", slug: "stree-2", title: "Stree 2", language: "Hindi", certificate: "U/A", runtimeMin: 149, genre: "Horror · Comedy", director: "Amar Kaushik", cast: ["Shraddha Kapoor", "Rajkummar Rao", "Pankaj Tripathi"], releaseDate: "2024-08-15", rating: 7.3, accent: "#3b1d4a", accent2: "#d58cff", synopsis: "Chanderi has a new menace, the headless Sarkata, and the only one who can stop him is the woman the town once feared." },
+];
+MOVIES.push(...MORE_MOVIES);
 
 const RULES = [
   { id: "r-morning", name: "Morning saver (before 1pm)", dayType: "any", fromHour: 0, toHour: 13, multiplier: 0.8, sortOrder: 1 },
@@ -83,11 +110,12 @@ async function main() {
   for (const t of [schema.payments, schema.tickets, schema.bookings, schema.seatHolds, schema.sessions, schema.shows, schema.seats, schema.screens, schema.movies, schema.customers, schema.staff, schema.pricingRules, schema.cinemas])
     await db.delete(t);
 
-  await db.insert(schema.cinemas).values(CINEMA);
+  await db.insert(schema.cinemas).values(CINEMAS);
   const seatsByScreen: Record<string, (typeof schema.seats.$inferSelect)[]> = {};
-  for (const [i, h] of HALLS.entries()) {
+  for (const [i, hd] of ALL_HALLS.entries()) {
+    const { cinemaId, ...h } = hd;
     const ls = layoutSeats(h);
-    await db.insert(schema.screens).values({ id: h.id, cinemaId: CINEMA.id, name: h.name, layout: h, seatCount: ls.length, sortOrder: i });
+    await db.insert(schema.screens).values({ id: h.id, cinemaId, name: h.name, layout: h, seatCount: ls.length, sortOrder: i });
     const rows = ls.map((s) => ({ id: `${h.id}:${s.id}`, screenId: h.id, label: s.id, row: s.row, rowIndex: s.r, num: s.num, category: s.cat, aisleAfter: s.aisleAfter }));
     for (let j = 0; j < rows.length; j += 100) await db.insert(schema.seats).values(rows.slice(j, j + 100));
     seatsByScreen[h.id] = rows as never;
@@ -104,6 +132,12 @@ async function main() {
     audi3: { movie: "meiyazhagan", format: "2D" },
     audi1: { movie: "amaran", format: "2D" },
     imax: { movie: "interstellar", format: "IMAX 2D" },
+    "sathyam-main": { movie: "vettaiyan", format: "2D" },
+    "sathyam-six": { movie: "manjummel-boys", format: "2D" },
+    "luxe-laser": { movie: "dune-part-two", format: "IMAX 2D" },
+    "luxe-2": { movie: "inside-out-2", format: "3D" },
+    "inox-1": { movie: "lucky-baskhar", format: "2D" },
+    "inox-3": { movie: "stree-2", format: "2D" },
   };
   const slots = ["10:30", "14:00", "17:30", "21:00"];
   const rules = await db.query.pricingRules.findMany();
@@ -112,11 +146,14 @@ async function main() {
   const base = dayStart(today);
   for (let d = -2; d <= 6; d++) {
     const dayMs = base + d * 86_400_000;
-    for (const h of HALLS) {
+    for (const h of ALL_HALLS) {
       let pick = schedule[h.id];
       // Mix things up: weekend afternoon in Audi 1 shows Meiyazhagan too.
       for (const [si, slot] of slots.entries()) {
         if (h.id === "audi1" && si === 1 && (d + 4) % 3 === 0) pick = { movie: "meiyazhagan", format: "2D" };
+        else if (h.id === "luxe-2" && si === 3) pick = { movie: "stree-2", format: "2D" };
+        else if (h.id === "inox-3" && si === 0) pick = { movie: "inside-out-2", format: "2D" };
+        else if (h.id === "sathyam-six" && si === 3) pick = { movie: "amaran", format: "2D" };
         else pick = schedule[h.id];
         const [hh, mm] = slot.split(":").map(Number);
         const startsAt = dayMs + (hh * 60 + mm) * 60_000;

@@ -188,6 +188,8 @@ export type HallLayout = {
   perSide: number;
   bands: [string, string][];
   basePrices: Record<string, number>;
+  /** Hall id the simulator knows (defaults to this screen id). */
+  simId?: string;
 };
 
 export type Movie = typeof movies.$inferSelect;

@@ -51,8 +51,8 @@ export function layoutSeats(h: HallLayout): LayoutSeat[] {
 
 /** The exact object shape the simulator's halls.js expects (functions omitted). */
 export function toSimulatorJson(h: HallLayout) {
-  const { basePrices: _bp, ...rest } = h;
-  void _bp;
+  const { basePrices: _bp, simId: _s, ...rest } = h;
+  void _bp; void _s;
   return rest;
 }
 

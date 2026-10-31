@@ -21,7 +21,7 @@ export default async function CounterSeats({ params }: { params: Promise<{ showI
       <h1 className="mt-1 text-xl font-bold">{show.movie.title} · {show.screen.name}</h1>
       <div className="text-sm text-muted">{fmtDateTime(show.startsAt)} · counter sale</div>
       <div className="mt-5">
-        <CounterPicker showId={show.id} hallId={show.screen.id} layout={show.screen.layout} seats={seats.map((s) => ({ label: s.label, row: s.row, rowIndex: s.rowIndex, num: s.num, category: s.category, aisleAfter: s.aisleAfter }))} prices={show.prices} initial={{ sold: st.sold.map(strip), held: st.held.map(strip), mine: st.mine.map(strip), myExpiresAt: st.myExpiresAt }} maxSeats={MAX_SEATS_PER_BOOKING} />
+        <CounterPicker showId={show.id} hallId={show.screen.layout.simId ?? show.screen.id} layout={show.screen.layout} seats={seats.map((s) => ({ label: s.label, row: s.row, rowIndex: s.rowIndex, num: s.num, category: s.category, aisleAfter: s.aisleAfter }))} prices={show.prices} initial={{ sold: st.sold.map(strip), held: st.held.map(strip), mine: st.mine.map(strip), myExpiresAt: st.myExpiresAt }} maxSeats={MAX_SEATS_PER_BOOKING} />
       </div>
     </div>
   );

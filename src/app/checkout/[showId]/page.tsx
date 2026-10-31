@@ -94,7 +94,7 @@ export default async function CheckoutPage({ params, searchParams }: { params: P
               {seats.map((s) => (
                 <li key={s.id} className="flex items-center justify-between py-2">
                   <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: CATEGORIES[s.category]?.css }} />{s.label} <span className="text-muted">{CATEGORIES[s.category]?.name}</span>
-                    <a className="text-xs text-brand hover:underline" href={simulatorLink(show.screen.id, s.label)} target="_blank" rel="noreferrer">view</a></span>
+                    <a className="text-xs text-brand hover:underline" href={simulatorLink(show.screen.layout.simId ?? show.screen.id, s.label)} target="_blank" rel="noreferrer">view</a></span>
                   <span className="num">{inr(show.prices[s.category] ?? 0)}</span>
                 </li>
               ))}

@@ -19,8 +19,8 @@ export async function Header() {
         <Logo />
         <nav className="flex items-center gap-1 text-sm">
           <Link href="/" className="rounded-lg px-3 py-2 text-muted hover:bg-panel hover:text-text">Movies</Link>
-          <Link href="/my" className="rounded-lg px-3 py-2 text-muted hover:bg-panel hover:text-text">
-            {customer ? `Hi, ${customer.name.split(" ")[0]}` : "My bookings"}
+          <Link href={customer ? "/my" : "/portal"} className="rounded-lg px-3 py-2 text-muted hover:bg-panel hover:text-text">
+            {customer ? `Hi, ${customer.name.split(" ")[0]}` : "Sign in"}
           </Link>
           <Link href="/admin" className="ml-1 hidden rounded-lg border border-line px-3 py-1.5 text-xs text-muted hover:text-text sm:inline-block">Staff</Link>
         </nav>

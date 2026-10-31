@@ -34,7 +34,7 @@ export default async function BookPage({ params, searchParams }: { params: Promi
         </div>
         {expired && <div className="mt-4 rounded-xl border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-amber-100">Your 8-minute seat hold expired, so the seats were released. Pick again.</div>}
         <div className="mt-6">
-          <SeatPicker showId={show.id} hallId={show.screen.id} layout={show.screen.layout} seats={seats.map((s) => ({ label: s.label, row: s.row, rowIndex: s.rowIndex, num: s.num, category: s.category, aisleAfter: s.aisleAfter }))} prices={show.prices} initial={initial} maxSeats={MAX_SEATS_PER_BOOKING} />
+          <SeatPicker showId={show.id} hallId={show.screen.layout.simId ?? show.screen.id} layout={show.screen.layout} seats={seats.map((s) => ({ label: s.label, row: s.row, rowIndex: s.rowIndex, num: s.num, category: s.category, aisleAfter: s.aisleAfter }))} prices={show.prices} initial={initial} maxSeats={MAX_SEATS_PER_BOOKING} />
         </div>
       </main>
     </>

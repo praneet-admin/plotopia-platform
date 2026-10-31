@@ -6,21 +6,31 @@ import { Footer, Header } from "@/components/Header";
 import { Poster } from "@/components/Poster";
 import { fillTone } from "@/components/ui";
 import { showsForMovieOnDay } from "@/lib/queries";
+import { listCinemas } from "@/lib/browse";
 import { dayKey, dayStart, fmtTime, inr, runtime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function MoviePage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ day?: string }> }) {
+export default async function MoviePage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ day?: string; cinema?: string }> }) {
   const { slug } = await params;
-  const { day: dayParam } = await searchParams;
+  const { day: dayParam, cinema: cinemaParam } = await searchParams;
   const movie = await db.query.movies.findFirst({ where: eq(schema.movies.slug, slug) });
   if (!movie) notFound();
   const today = dayKey(Date.now());
   const days = Array.from({ length: 7 }, (_, i) => dayKey(dayStart(today) + i * 86_400_000));
   const day = dayParam && days.includes(dayParam) ? dayParam : today;
-  const shows = await showsForMovieOnDay(movie.id, day);
-  const byScreen = new Map<string, typeof shows>();
-  for (const s of shows) byScreen.set(s.screenId, [...(byScreen.get(s.screenId) ?? []), s]);
+  const allShows = await showsForMovieOnDay(movie.id, day);
+  const cinemas = await listCinemas();
+  const cinemaIdsToday = [...new Set(allShows.map((s) => s.screen.cinemaId))];
+  const cinema = cinemas.find((c) => c.id === cinemaParam);
+  const shows = cinema ? allShows.filter((s) => s.screen.cinemaId === cinema.id) : allShows;
+  const byCinema = new Map<string, Map<string, typeof shows>>();
+  for (const s of shows) {
+    const m = byCinema.get(s.screen.cinemaId) ?? new Map<string, typeof shows>();
+    m.set(s.screenId, [...(m.get(s.screenId) ?? []), s]);
+    byCinema.set(s.screen.cinemaId, m);
+  }
+  const qs = (d: string, c?: string) => `?day=${d}${c ? `&cinema=${c}` : ""}`;
   const now = Date.now();
 
   return (
@@ -51,7 +61,7 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
               const ms = dayStart(d);
               const active = d === day;
               return (
-                <Link key={d} href={`?day=${d}`} scroll={false} className={`flex w-[62px] flex-none flex-col items-center rounded-xl border px-2 py-2 text-center ${active ? "border-brand bg-brand/10" : "border-line bg-panel hover:bg-panel-2"}`}>
+                <Link key={d} href={qs(d, cinema?.id)} scroll={false} className={`flex w-[62px] flex-none flex-col items-center rounded-xl border px-2 py-2 text-center ${active ? "border-brand bg-brand/10" : "border-line bg-panel hover:bg-panel-2"}`}>
                   <span className="text-[10px] font-semibold uppercase text-muted">{new Date(ms).toLocaleDateString("en-IN", { weekday: "short", timeZone: "Asia/Kolkata" })}</span>
                   <span className="text-lg font-bold leading-tight">{new Date(ms).toLocaleDateString("en-IN", { day: "numeric", timeZone: "Asia/Kolkata" })}</span>
                   <span className="text-[10px] text-muted">{new Date(ms).toLocaleDateString("en-IN", { month: "short", timeZone: "Asia/Kolkata" })}</span>
@@ -60,8 +70,18 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
             })}
           </div>
 
-          <div className="mt-4 space-y-4">
-            {byScreen.size === 0 && <div className="card p-8 text-center text-muted">No shows on this day.</div>}
+          {cinemaIdsToday.length > 1 && (
+            <div className="scroll-x mt-3 flex gap-2 pb-1">
+              <Link href={qs(day)} className={`pill h-8 flex-none ${!cinema ? "border-brand text-brand" : "text-muted hover:text-text"}`}>All theatres</Link>
+              {cinemas.filter((c) => cinemaIdsToday.includes(c.id)).map((c) => <Link key={c.id} href={qs(day, c.id)} className={`pill h-8 flex-none ${cinema?.id === c.id ? "border-brand text-brand" : "text-muted hover:text-text"}`}>{c.name}</Link>)}
+            </div>
+          )}
+          <div className="mt-4 space-y-6">
+            {byCinema.size === 0 && <div className="card p-8 text-center text-muted">No shows on this day{cinema ? ` at ${cinema.name}` : ""}.</div>}
+            {[...byCinema.entries()].map(([cid, byScreen]) => { const c = cinemas.find((x) => x.id === cid)!; return (
+            <div key={cid}>
+              <div className="mb-2 flex items-baseline justify-between"><h3 className="font-bold">{c.name}</h3><span className="text-xs text-muted">{c.address}</span></div>
+              <div className="space-y-3">
             {[...byScreen.values()].map((list) => {
               const screen = list[0].screen;
               const prices = list.flatMap((s) => Object.values(s.prices));
@@ -72,7 +92,6 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
                       <div className="font-semibold">{screen.name}</div>
                       <div className="text-xs text-muted">{list[0].format} · {screen.seatCount} seats · {inr(Math.min(...prices))} – {inr(Math.max(...prices))}</div>
                     </div>
-                    <span className="text-xs text-muted">PVR Phoenix MarketCity</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {list.map((s) => {
@@ -97,6 +116,9 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
                 </div>
               );
             })}
+              </div>
+            </div>
+            ); })}
           </div>
         </section>
       </main>

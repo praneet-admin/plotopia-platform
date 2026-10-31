@@ -74,7 +74,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
               <div className="col-span-3"><div className="text-[10px] font-bold uppercase text-gray-500">Seats</div>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {b.tickets.map((t) => (
-                    <a key={t.id} href={simulatorLink(b.show.screen.id, t.seatLabel)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-sm font-semibold hover:border-gray-400" title="See the view from this seat">
+                    <a key={t.id} href={simulatorLink(b.show.screen.layout.simId ?? b.show.screen.id, t.seatLabel)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-sm font-semibold hover:border-gray-400" title="See the view from this seat">
                       <span className="h-2 w-2 rounded-sm" style={{ background: CATEGORIES[t.category]?.css }} />{t.seatLabel}{t.checkedInAt && <span className="text-[10px] text-green-600">✓ in</span>}
                     </a>
                   ))}
