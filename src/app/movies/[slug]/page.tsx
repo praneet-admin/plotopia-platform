@@ -39,26 +39,21 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
     <>
       <Header />
       <main className="flex-1 pb-10">
-        <section className="relative overflow-hidden">
-          <div className="beam" aria-hidden />
-          <div className="container-x relative pt-6 sm:pt-10">
-            <Link href="/" className="text-sm text-muted hover:text-text">All movies</Link>
-            <div className="screen mt-3 grid gap-5 p-5 sm:grid-cols-[150px_1fr] sm:gap-7 sm:p-7 lg:grid-cols-[180px_1fr]">
-              <Poster movie={movie} className="w-[120px] sm:w-auto" size="sm" />
-              <div className="min-w-0">
-                <h1 className="text-[clamp(30px,5vw,52px)] font-extrabold leading-[0.95] tracking-[-0.035em]">{movie.title}</h1>
-                <p className="mt-3 text-sm text-muted">{movie.language}, {movie.certificate}, {runtime(movie.runtimeMin)}. {movie.genre.replace(/ · /g, " and ")}. Rated {movie.rating.toFixed(1)}.</p>
-                <a href="#showtimes" className="btn btn-primary mt-4">Book tickets</a>
-                <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-text/90">{movie.synopsis}</p>
-                <p className="mt-2 max-w-[62ch] text-sm text-muted">Directed by {movie.director}. With {movie.cast.join(", ")}.</p>
-              </div>
+        <section className="container-x pt-6 sm:pt-8">
+          <Link href="/" className="text-sm text-muted hover:text-text">All movies</Link>
+          <div className="mt-3 flex gap-5 sm:gap-7">
+            <Poster movie={movie} className="w-[110px] flex-none sm:w-[160px]" size="sm" />
+            <div className="min-w-0">
+              <h1 className="text-[clamp(26px,4vw,40px)] font-extrabold leading-[1] tracking-[-0.03em]">{movie.title}</h1>
+              <p className="mt-2 text-sm text-muted">{movie.language} · {movie.certificate} · {runtime(movie.runtimeMin)} · {movie.genre}</p>
+              <p className="mt-3 hidden max-w-[62ch] text-[15px] leading-relaxed text-text/90 sm:block">{movie.synopsis}</p>
+              <p className="mt-2 hidden max-w-[62ch] text-sm text-muted sm:block">Directed by {movie.director}. With {movie.cast.join(", ")}.</p>
             </div>
-            <div className="seat-row mx-6 mt-3 sm:mx-10" aria-hidden />
-            <div className="seat-row mx-2 mt-1.5 opacity-60 sm:mx-4" aria-hidden />
           </div>
+          <p className="mt-4 text-[15px] leading-relaxed text-text/90 sm:hidden">{movie.synopsis}</p>
         </section>
 
-        <section id="showtimes" className="container-x mt-8 scroll-mt-20">
+        <section id="showtimes" className="container-x mt-8 border-t border-line pt-6">
           <h2 className="text-xl font-bold tracking-tight">Showtimes</h2>
           <p className="mt-1 text-sm text-muted">Pick a day and a time. The time opens the 3D hall where you choose your seat.</p>
           <div className="rail -mx-4 mt-3 px-4 sm:mx-0 sm:px-0" aria-label="Day">
