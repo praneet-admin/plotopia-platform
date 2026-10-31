@@ -55,7 +55,8 @@ body {
 .container-x { width: 100%; max-width: 1120px; margin-inline: auto; padding-inline: 16px; }
 @media (min-width: 640px) { .container-x { padding-inline: 24px; } }
 
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+.panel { background: var(--panel); border-radius: 14px; box-shadow: 0 0 0 1px rgba(255,255,255,.05), 0 24px 48px -32px rgba(0,0,0,.9); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 12px; font-weight: 600; font-size: 15px; transition: transform .08s ease, background .15s ease, opacity .15s; border: 1px solid transparent; white-space: nowrap; cursor: pointer; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
@@ -85,7 +86,7 @@ select.input { appearance: none; }
 .seat.held { border-color: #4a4a55; background: repeating-linear-gradient(45deg, #2a2a30 0 3px, #3a3a41 3px 6px); cursor: not-allowed; }
 .seat.mine { background: var(--brand); border-color: var(--brand); color: var(--ink); box-shadow: 0 4px 14px rgba(255,194,14,.35); }
 .seat.recl { border-radius: 9px 9px 5px 5px; }
-.screen-glow { height: 6px; border-radius: 999px; background: linear-gradient(90deg, transparent, #ffe08a 20%, #fff 50%, #ffe08a 80%, transparent); box-shadow: 0 10px 40px rgba(255,194,14,.25), 0 0 80px rgba(255,194,14,.12); }
+.screen-glow { height: 8px; border-radius: 0 0 999px 999px; background: linear-gradient(90deg, #2a2a30, #fff2c4 30%, #fff 50%, #fff2c4 70%, #2a2a30); box-shadow: 0 12px 50px -4px rgba(255,226,140,.35); }
 
 .poster { aspect-ratio: 2/3; border-radius: 10px; overflow: hidden; position: relative; isolation: isolate; box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 20px 40px -24px rgba(0,0,0,.9); }
 

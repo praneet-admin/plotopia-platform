@@ -30,7 +30,7 @@ export function SeatMap({ layout, seats, sold, held, selected, prices, onToggle,
       <div className="mx-auto" style={{ minWidth: minW, width: "fit-content" }}>
         <div className="mb-6 px-10">
           <div className="screen-glow" />
-          <div className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[.3em] text-muted">Screen this way</div>
+          <div className="mt-2 text-center text-xs text-muted">Screen</div>
         </div>
         <div className="flex flex-col gap-[5px]">
           {rows.map(({ row, list, header }) => {

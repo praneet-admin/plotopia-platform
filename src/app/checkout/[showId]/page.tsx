@@ -69,12 +69,12 @@ export default async function CheckoutPage({ params, searchParams }: { params: P
       <ExpiryRedirect until={expiresAt} to={`/book/${showId}?expired=1`} />
       <main className="container-x flex-1 pb-10">
         <div className="mt-5 flex items-center justify-between">
-          <Link href={`/book/${showId}`} className="text-xs text-muted hover:text-text">← Change seats</Link>
+          <Link href={`/book/${showId}`} className="text-sm text-muted hover:text-text">Change seats</Link>
           <div className="pill">Seats held for <Countdown until={expiresAt} /></div>
         </div>
         <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_380px]">
-          <form action={submit} className="card order-2 p-5 lg:order-1">
-            <h1 className="text-lg font-bold">Who&apos;s watching?</h1>
+          <form action={submit} className="panel order-2 p-5 sm:p-6 lg:order-1">
+            <h1 className="text-xl font-bold tracking-tight">Who are the tickets for?</h1>
             <p className="mt-1 text-sm text-muted">Tickets go to this number on WhatsApp and SMS. No account needed.</p>
             {error && <div className="mt-3 rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-red-200">{error}</div>}
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -85,8 +85,8 @@ export default async function CheckoutPage({ params, searchParams }: { params: P
             <button className="btn btn-primary mt-5 w-full sm:w-auto">Continue to payment · {inr(subtotal + fee)}</button>
           </form>
 
-          <aside className="card order-1 p-5 lg:order-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted">Order summary</div>
+          <aside className="panel order-1 p-5 lg:order-2">
+            <div className="text-sm text-muted">Your order</div>
             <div className="mt-2 font-bold">{show.movie.title}</div>
             <div className="text-sm text-muted">{show.screen.name} · {show.format}</div>
             <div className="text-sm text-muted">{fmtDateTime(show.startsAt)}</div>

@@ -25,7 +25,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <div><h1 className="text-2xl font-bold">Today</h1><div className="text-sm text-muted">{new Date(now).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" })}</div></div>
+        <div><h1 className="text-3xl font-extrabold tracking-tight">Today</h1><div className="text-sm text-muted">{new Date(now).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" })}</div></div>
         <Link href="/admin/counter" className="btn btn-primary btn-sm">New counter sale</Link>
       </div>
       {denied && <div className="rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-sm">You don&apos;t have access to that page.</div>}

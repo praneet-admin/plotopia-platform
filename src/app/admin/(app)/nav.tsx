@@ -9,7 +9,7 @@ export function AdminNav({ items }: { items: { href: string; label: string }[] }
       {items.map((n) => {
         const active = n.href === "/admin" ? path === "/admin" : path.startsWith(n.href);
         return (
-          <Link key={n.href} href={n.href} className={`flex-none rounded-lg px-3 py-2 text-sm ${active ? "bg-brand/15 font-semibold text-brand" : "text-muted hover:bg-panel hover:text-text"}`}>{n.label}</Link>
+          <Link key={n.href} href={n.href} className={`flex-none rounded-lg px-3 py-2 text-sm ${active ? "bg-panel font-semibold text-text shadow-[inset_3px_0_0_var(--brand)]" : "text-muted hover:bg-panel hover:text-text"}`}>{n.label}</Link>
         );
       })}
     </nav>

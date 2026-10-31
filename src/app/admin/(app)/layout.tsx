@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="flex flex-col gap-2 border-b border-line bg-bg-2 px-4 py-3 lg:w-60 lg:flex-none lg:border-b-0 lg:border-r lg:py-5">
         <div className="flex items-center justify-between">
           <Logo />
-          <span className="pill ml-2 hidden text-[10px] lg:inline-flex">Back office</span>
+          <span className="ml-2 hidden text-xs text-muted lg:inline">Back office</span>
           <form action={logout} className="lg:hidden"><button className="btn btn-ghost btn-sm">Sign out</button></form>
         </div>
         <AdminNav items={items} />

@@ -63,7 +63,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
           <div className="overflow-hidden rounded-2xl bg-white text-[#0b0d12] shadow-2xl">
             <div className="p-5" style={{ background: `linear-gradient(135deg, ${b.show.movie.accent}, ${b.show.movie.accent2})` }}>
               <div className="flex items-start justify-between text-white">
-                <div><div className="text-[10px] font-bold uppercase tracking-[.2em] opacity-80">Plotopia · e-ticket</div><div className="mt-1 text-2xl font-black leading-tight">{b.show.movie.title}</div><div className="text-sm opacity-90">{b.show.movie.language} · {b.show.movie.certificate} · {runtime(b.show.movie.runtimeMin)}</div></div>
+                <div><div className="text-xs font-semibold opacity-80">Plotopia e-ticket</div><div className="mt-1 text-2xl font-black leading-tight">{b.show.movie.title}</div><div className="text-sm opacity-90">{b.show.movie.language} · {b.show.movie.certificate} · {runtime(b.show.movie.runtimeMin)}</div></div>
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${b.status === "confirmed" ? "bg-white/20" : "bg-black/40"}`}>{b.status}</span>
               </div>
             </div>
@@ -105,14 +105,14 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
           </div>
 
           {canCancel && (
-            <form action={cancel} className="card mt-5 p-4">
+            <form action={cancel} className="panel mt-5 p-4">
               <div className="text-sm font-semibold">Can&apos;t make it?</div>
               <p className="mt-1 text-xs text-muted">Cancelling now refunds <span className="text-text">{inr(refund.amount)}</span> ({refund.pct}% of {inr(b.total)}). Full refund up to 24h before, 50% up to 2h before, none after.</p>
               <button className="btn btn-danger btn-sm mt-3">Cancel booking</button>
             </form>
           )}
           {notes.length > 0 && (
-            <details className="card mt-5 p-4 text-sm">
+            <details className="panel mt-5 p-4 text-sm">
               <summary className="cursor-pointer font-semibold">Messages sent ({notes.length})</summary>
               <ul className="mt-3 space-y-3">
                 {notes.map((n) => (

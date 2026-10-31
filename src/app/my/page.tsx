@@ -3,6 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { Footer, Header } from "@/components/Header";
 import { Empty } from "@/components/ui";
+import { Poster } from "@/components/Poster";
 import { currentCustomer, customerLogout } from "@/lib/auth";
 import { fmtDateTime, inr } from "@/lib/format";
 import { redirect } from "next/navigation";
@@ -20,12 +21,12 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
   async function logout() { "use server"; await customerLogout(); redirect("/"); }
 
   const Row = ({ b }: { b: (typeof list)[number] }) => (
-    <Link href={`/tickets/${b.id}`} className="card flex items-center gap-4 p-4 hover:border-brand/60">
-      <div className="h-14 w-10 flex-none rounded-md" style={{ background: `linear-gradient(160deg, ${b.show.movie.accent2}, ${b.show.movie.accent})` }} />
+    <Link href={`/tickets/${b.id}`} className="group flex items-center gap-4 py-4 hover:bg-panel/60 sm:px-2">
+      <Poster movie={b.show.movie} className="w-12 flex-none" size="sm" />
       <div className="min-w-0 flex-1">
         <div className="truncate font-semibold">{b.show.movie.title}</div>
         <div className="text-xs text-muted">{fmtDateTime(b.show.startsAt)} · {b.show.screen.name.split(" ·")[0]} · {b.seatLabels.join(", ")}</div>
-        <div className="mt-1 text-xs"><span className="font-mono text-muted">{b.id}</span> · <span className={b.status === "confirmed" ? "text-ok" : "text-muted"}>{b.status}</span></div>
+        <div className="mt-1 text-xs"><span className="font-mono text-muted">{b.id}</span> <span className={b.status === "confirmed" ? "text-ok" : "text-muted"}>{b.status}</span></div>
       </div>
       <div className="num text-sm font-semibold">{inr(b.total)}</div>
     </Link>
@@ -36,12 +37,12 @@ export default async function MyPage({ searchParams }: { searchParams: Promise<{
       <Header />
       <main className="container-x flex-1">
         <div className="mt-6 flex items-center justify-between sm:mt-10">
-          <div><h1 className="text-2xl font-bold">My bookings</h1><div className="text-sm text-muted">{customer.name} · +91 {customer.phone}</div></div>
+          <div><h1 className="text-3xl font-extrabold tracking-tight">My tickets</h1><div className="text-sm text-muted">{customer.name} · +91 {customer.phone}</div></div>
           <form action={logout}><button className="btn btn-ghost btn-sm">Sign out</button></form>
         </div>
-        <h2 className="mt-6 text-xs font-semibold uppercase tracking-wider text-muted">Upcoming</h2>
-        <div className="mt-2 space-y-2">{upcoming.length ? upcoming.map((b) => <Row key={b.id} b={b} />) : <Empty title="No upcoming shows" hint="Book something good." action={{ href: "/", label: "Browse movies" }} />}</div>
-        {past.length > 0 && (<><h2 className="mt-8 text-xs font-semibold uppercase tracking-wider text-muted">Past &amp; cancelled</h2><div className="mt-2 space-y-2">{past.map((b) => <Row key={b.id} b={b} />)}</div></>)}
+        <h2 className="mt-8 text-lg font-bold tracking-tight">Upcoming</h2>
+        <div className="mt-2 divide-y divide-line border-y border-line">{upcoming.length ? upcoming.map((b) => <Row key={b.id} b={b} />) : <Empty title="No upcoming shows" hint="Book something good." action={{ href: "/", label: "Browse movies" }} />}</div>
+        {past.length > 0 && (<><h2 className="mt-10 text-lg font-bold tracking-tight">Past and cancelled</h2><div className="mt-2 divide-y divide-line border-y border-line">{past.map((b) => <Row key={b.id} b={b} />)}</div></>)}
       </main>
       <Footer />
     </>

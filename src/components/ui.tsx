@@ -17,9 +17,9 @@ export function Empty({ title, hint, action }: { title: string; hint?: string; a
 export function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "ok" | "warn" | "bad" }) {
   const col = tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : tone === "bad" ? "text-bad" : "";
   return (
-    <div className="card p-4">
-      <div className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</div>
-      <div className={`num mt-1 text-2xl font-bold ${col}`}>{value}</div>
+    <div className="panel p-4">
+      <div className="text-sm text-muted">{label}</div>
+      <div className={`num mt-1 text-[28px] font-extrabold tracking-tight ${col}`}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-muted">{sub}</div>}
     </div>
   );

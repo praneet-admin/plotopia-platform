@@ -73,11 +73,11 @@ export default async function PayPage({ params, searchParams }: { params: Promis
       <ExpiryRedirect until={expiresAt} to={`/book/${booking.showId}?expired=1`} />
       <main className="container-x flex-1 pb-10">
         <div className="mt-5 flex items-center justify-between">
-          <Link href={`/book/${booking.showId}`} className="text-xs text-muted hover:text-text">← Back to seats</Link>
+          <Link href={`/book/${booking.showId}`} className="text-sm text-muted hover:text-text">Back to seats</Link>
           <div className="pill">Complete payment in <Countdown until={expiresAt} /></div>
         </div>
         <div className="mx-auto mt-5 max-w-lg">
-          <div className="card overflow-hidden">
+          <div className="panel overflow-hidden">
             <div className="flex items-center justify-between border-b border-line bg-panel-2 px-5 py-3">
               <div className="flex items-center gap-2 text-sm font-semibold">Pay with UPI <span className="pill text-[10px]">TEST MODE</span></div>
               <div className="text-xs text-muted">Ref {booking.id}</div>

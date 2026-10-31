@@ -24,12 +24,13 @@ export default async function BookPage({ params, searchParams }: { params: Promi
   return (
     <>
       <Header />
-      <main className="container-x flex-1">
-        <div className="mt-5 flex items-start justify-between gap-3">
+      <main className="container-x relative flex-1">
+        <div className="beam" aria-hidden />
+        <div className="relative mt-5 flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <Link href={`/movies/${show.movie.slug}`} className="text-xs text-muted hover:text-text">← {show.movie.title}</Link>
-            <h1 className="mt-1 text-xl font-bold leading-tight sm:text-2xl">{show.movie.title} <span className="text-muted">·</span> {show.screen.name}</h1>
-            <div className="mt-1 text-sm text-muted">{fmtDateTime(show.startsAt)} · {show.format} · {show.movie.certificate} · {runtime(show.movie.runtimeMin)}</div>
+            <Link href={`/movies/${show.movie.slug}`} className="text-sm text-muted hover:text-text">{show.movie.title}</Link>
+            <h1 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">Choose your seats</h1>
+            <div className="mt-1 text-sm text-muted">{show.screen.name}, {show.screen.cinema.name}. {fmtDateTime(show.startsAt)}, {show.format}, {runtime(show.movie.runtimeMin)}.</div>
           </div>
         </div>
         {expired && <div className="mt-4 rounded-xl border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-amber-100">Your 8-minute seat hold expired, so the seats were released. Pick again.</div>}
