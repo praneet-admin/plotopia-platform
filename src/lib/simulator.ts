@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import type { Movie, Screen, Show } from "@/db/schema";
-import { coverFor } from "./covers";
 import { dayKey, runtime } from "./format";
 import { SIMULATOR_URL } from "./hall";
 
@@ -34,7 +33,6 @@ export function simulatorShowLink(show: ShowFull, origin: string) {
     date: dayKey(show.startsAt),
     return: `${origin}/api/checkout/start`,
   });
-  const cover = coverFor(show.movie.id);
-  if (cover && origin.startsWith("https://")) p.set("poster", `${origin}${cover}`);
+  // The hall screen shows the simulator's own screen image for every film; no poster is sent.
   return `${SIMULATOR_URL}#${p.toString()}`;
 }
