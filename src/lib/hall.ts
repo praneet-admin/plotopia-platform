@@ -62,6 +62,11 @@ export function simulatorLink(hallId: string, seatLabel: string, view: "seat" | 
   return `${SIMULATOR_URL}#hall=${encodeURIComponent(hallId)}&seat=${encodeURIComponent(seatLabel)}&view=${view}`;
 }
 
+/** Where a showtime sends the customer: the simulator, opened on that hall. */
+export function simulatorShowLink(hallId: string, showId: string) {
+  return `${SIMULATOR_URL}#hall=${encodeURIComponent(hallId)}&view=overview&show=${encodeURIComponent(showId)}`;
+}
+
 export function validateLayout(h: Partial<HallLayout>): string[] {
   const errs: string[] = [];
   if (!h.id || !/^[a-z0-9_-]+$/i.test(h.id)) errs.push("id must be letters/numbers only");

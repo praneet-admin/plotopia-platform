@@ -5,6 +5,7 @@ import { db, schema } from "@/db";
 import { Footer, Header } from "@/components/Header";
 import { Poster } from "@/components/Poster";
 import { fillTone } from "@/components/ui";
+import { simulatorShowLink } from "@/lib/hall";
 import { showsForMovieOnDay } from "@/lib/queries";
 import { listCinemas } from "@/lib/browse";
 import { dayKey, dayStart, fmtTime, inr, runtime } from "@/lib/format";
@@ -100,7 +101,7 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
                               const past = s.startsAt < now - 20 * 60_000;
                               const soldOut = s.sold >= screen.seatCount;
                               const inner = (<><b>{fmtTime(s.startsAt)}</b><small className={past ? "text-muted" : tone.cls}>{past ? "Started" : tone.label}</small></>);
-                              return past || soldOut ? <span key={s.id} className="showtime opacity-50">{inner}</span> : <Link key={s.id} href={`/book/${s.id}`} className="showtime">{inner}</Link>;
+                              return past || soldOut ? <span key={s.id} className="showtime opacity-50">{inner}</span> : <a key={s.id} href={simulatorShowLink(s.screen.layout.simId ?? s.screen.id, s.id)} className="showtime">{inner}</a>;
                             })}
                           </div>
                         </div>

@@ -1,6 +1,14 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import type { Movie } from "@/db/schema";
 
 type P = Pick<Movie, "id" | "title" | "accent" | "accent2" | "language" | "certificate">;
+
+/** A real cover wins over the generated one: drop public/covers/<movie id>.jpg|webp|png. */
+export function coverFor(id: string) {
+  for (const ext of ["jpg", "webp", "png"]) if (existsSync(path.join(process.cwd(), "public", "covers", `${id}.${ext}`))) return `/covers/${id}.${ext}`;
+  return null;
+}
 
 function hash(s: string) { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; }
 
@@ -10,12 +18,20 @@ function hash(s: string) { let h = 2166136261; for (const c of s) h = Math.imul(
  * ships without licensed artwork, so the posters have to carry themselves.
  */
 export function Poster({ movie, className = "", size = "md", priority }: { movie: P; className?: string; size?: "sm" | "md" | "lg"; priority?: boolean }) {
-  void priority;
   const h = hash(movie.id);
   const motif = h % 4;
   const seed = (h >> 4) % 1000;
   const fs = size === "lg" ? "text-[clamp(28px,4vw,44px)]" : size === "sm" ? "text-[15px]" : "text-[clamp(17px,2vw,22px)]";
   const a = movie.accent, b = movie.accent2;
+  const cover = coverFor(movie.id);
+  if (cover) {
+    return (
+      <div className={`poster ${className}`} style={{ background: a }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={cover} alt={`${movie.title} poster`} className="absolute inset-0 h-full w-full object-cover" loading={priority ? "eager" : "lazy"} />
+      </div>
+    );
+  }
   return (
     <div className={`poster ${className}`} style={{ background: a }} aria-hidden={false}>
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">

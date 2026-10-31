@@ -8,6 +8,7 @@ import { browseMovies, genreTokens, listCinemas } from "@/lib/browse";
 import { dayKey, fmtTime, inr, runtime } from "@/lib/format";
 import { VISITED_COOKIE } from "@/lib/portal";
 import { showsForMovieOnDay } from "@/lib/queries";
+import { simulatorShowLink } from "@/lib/hall";
 
 export const dynamic = "force-dynamic";
 
@@ -68,10 +69,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
                       <div className="text-sm text-muted">Showtimes today</div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {featuredShows.slice(0, 6).map((s) => (
-                          <Link key={s.id} href={`/book/${s.id}`} className="showtime">
+                          <a key={s.id} href={simulatorShowLink(s.screen.layout.simId ?? s.screen.id, s.id)} className="showtime">
                             <b>{fmtTime(s.startsAt)}</b>
                             <small className="text-muted">{short(s.screen.cinemaId)} · from {inr(Math.min(...Object.values(s.prices)))}</small>
-                          </Link>
+                          </a>
                         ))}
                         {featuredShows.length > 6 && <Link href={`/movies/${featured.slug}`} className="showtime justify-center text-muted"><b className="font-medium">+{featuredShows.length - 6} more</b></Link>}
                       </div>
