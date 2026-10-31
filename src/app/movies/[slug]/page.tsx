@@ -5,7 +5,7 @@ import { db, schema } from "@/db";
 import { Footer, Header } from "@/components/Header";
 import { Poster } from "@/components/Poster";
 import { fillTone } from "@/components/ui";
-import { simulatorShowLink } from "@/lib/hall";
+import { simulatorShowLink, siteOrigin } from "@/lib/simulator";
 import { showsForMovieOnDay } from "@/lib/queries";
 import { listCinemas } from "@/lib/browse";
 import { dayKey, dayStart, fmtTime, inr, runtime } from "@/lib/format";
@@ -20,6 +20,7 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
   const today = dayKey(Date.now());
   const days = Array.from({ length: 7 }, (_, i) => dayKey(dayStart(today) + i * 86_400_000));
   const day = dayParam && days.includes(dayParam) ? dayParam : today;
+  const origin = await siteOrigin();
   const allShows = await showsForMovieOnDay(movie.id, day);
   const cinemas = await listCinemas();
   const cinemaIdsToday = [...new Set(allShows.map((s) => s.screen.cinemaId))];
@@ -101,7 +102,7 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
                               const past = s.startsAt < now - 20 * 60_000;
                               const soldOut = s.sold >= screen.seatCount;
                               const inner = (<><b>{fmtTime(s.startsAt)}</b><small className={past ? "text-muted" : tone.cls}>{past ? "Started" : tone.label}</small></>);
-                              return past || soldOut ? <span key={s.id} className="showtime opacity-50">{inner}</span> : <a key={s.id} href={simulatorShowLink(s.screen.layout.simId ?? s.screen.id, s.id)} className="showtime">{inner}</a>;
+                              return past || soldOut ? <span key={s.id} className="showtime opacity-50">{inner}</span> : <a key={s.id} href={simulatorShowLink({ ...s, movie }, origin)} className="showtime">{inner}</a>;
                             })}
                           </div>
                         </div>

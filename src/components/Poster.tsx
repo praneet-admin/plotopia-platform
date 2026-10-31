@@ -1,14 +1,7 @@
-import { existsSync } from "node:fs";
-import path from "node:path";
 import type { Movie } from "@/db/schema";
+import { coverFor } from "@/lib/covers";
 
 type P = Pick<Movie, "id" | "title" | "accent" | "accent2" | "language" | "certificate">;
-
-/** A real cover wins over the generated one: drop public/covers/<movie id>.jpg|webp|png. */
-export function coverFor(id: string) {
-  for (const ext of ["jpg", "webp", "png"]) if (existsSync(path.join(process.cwd(), "public", "covers", `${id}.${ext}`))) return `/covers/${id}.${ext}`;
-  return null;
-}
 
 function hash(s: string) { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; }
 
