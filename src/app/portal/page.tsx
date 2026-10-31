@@ -47,41 +47,40 @@ export default async function Portal({ searchParams }: { searchParams: Promise<{
   const known = phone ? await db.query.customers.findFirst({ where: eq(schema.customers.phone, phone) }) : null;
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-10">
-      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-        <div className="absolute left-1/2 top-[-20%] h-[60vh] w-[120vw] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(closest-side,rgba(255,194,14,.14),transparent)]" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent" />
-      </div>
-      <div className="fade-up flex flex-col items-center text-center">
-        <Image src="/brand/mark.png" alt="" width={96} height={96} className="h-24 w-24 rounded-full shadow-[0_0_60px_rgba(255,194,14,.25)]" priority />
-        <Image src="/brand/wordmark-white.png" alt="Plotopia" width={220} height={67} className="mt-5 h-12 w-auto" priority />
-        <p className="mt-3 max-w-sm text-sm text-muted">Movies across Chennai&apos;s theatres. Pick a seat and see the screen from it before you pay.</p>
+    <main className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 pb-16 pt-10 sm:pt-16">
+      <div className="beam" aria-hidden />
+      <div className="relative flex flex-col items-center text-center">
+        <Image src="/brand/mark.png" alt="" width={72} height={72} className="h-[72px] w-[72px] rounded-full" priority />
+        <Image src="/brand/wordmark-white.png" alt="Plotopia" width={220} height={67} className="mt-4 h-11 w-auto" priority />
+        <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-muted">Movie tickets across Chennai. Pick a seat and see the screen from it before you pay.</p>
       </div>
 
-      <div className="card fade-up mt-8 w-full max-w-sm p-6" style={{ animationDelay: "120ms" }}>
-        <h1 className="text-lg font-bold">{phone ? "Enter the code" : "Sign in"}</h1>
-        <p className="mt-1 text-sm text-muted">{phone ? `Code sent to +91 ${phone}. Demo code: 1234.` : "One-time code on your mobile. No password."}</p>
+      <div className="screen relative mt-10 w-full max-w-[420px] p-6 sm:p-7">
+        <h1 className="text-xl font-bold tracking-tight">{phone ? "Enter the code" : "Sign in"}</h1>
+        <p className="mt-1 text-sm text-muted">{phone ? `We sent a 4-digit code to +91 ${phone}. In this demo the code is 1234.` : "A one-time code on your mobile. No password to remember."}</p>
         {error && <div className="mt-3 rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-red-200">{error}</div>}
         {!phone ? (
-          <form action={sendOtp} className="mt-4 space-y-3">
-            <div className="flex"><span className="flex h-11 items-center rounded-l-xl border border-r-0 border-line bg-panel-2 px-3 text-sm text-muted">+91</span><input name="phone" className="input rounded-l-none" inputMode="numeric" placeholder="Mobile number" autoFocus aria-label="Mobile number" /></div>
-            <button className="btn btn-primary w-full">Send code</button>
+          <form action={sendOtp} className="mt-5 space-y-3">
+            <div className="flex"><span className="flex h-12 items-center rounded-l-xl border border-r-0 border-line bg-panel-2 px-3 text-sm text-muted">+91</span><input name="phone" className="input h-12 rounded-l-none text-base" inputMode="numeric" placeholder="Mobile number" autoFocus aria-label="Mobile number" /></div>
+            <button className="btn btn-primary h-12 w-full text-base">Send code</button>
           </form>
         ) : (
-          <form action={verify} className="mt-4 space-y-3">
+          <form action={verify} className="mt-5 space-y-3">
             <input type="hidden" name="phone" value={phone} />
-            {!known && <div><label className="label" htmlFor="name">Your name</label><input id="name" name="name" className="input" autoComplete="name" /></div>}
-            <div><label className="label" htmlFor="otp">Code</label><input id="otp" name="otp" className="input num text-center text-xl tracking-[.5em]" inputMode="numeric" maxLength={4} autoFocus /></div>
-            <button className="btn btn-primary w-full">Verify &amp; continue</button>
-            <Link href={portalUrl(dest)} className="block text-center text-xs text-muted hover:text-text">Use a different number</Link>
+            {!known && <div><label className="label" htmlFor="name">Your name</label><input id="name" name="name" className="input h-12" autoComplete="name" /></div>}
+            <div><label className="label" htmlFor="otp">Code</label><input id="otp" name="otp" className="input num h-12 text-center text-2xl tracking-[.5em]" inputMode="numeric" maxLength={4} autoFocus /></div>
+            <button className="btn btn-primary h-12 w-full text-base">Continue</button>
+            <Link href={portalUrl(dest)} className="block text-center text-sm text-muted hover:text-text">Use a different number</Link>
           </form>
         )}
-        <div className="my-4 flex items-center gap-3 text-[11px] uppercase tracking-wider text-muted"><span className="h-px flex-1 bg-line" />or<span className="h-px flex-1 bg-line" /></div>
-        <form action={guest}><button className="btn btn-ghost w-full">Browse as guest</button></form>
+        <form action={guest} className="mt-4 border-t border-line pt-4"><button className="btn btn-ghost w-full">Just browse for now</button></form>
       </div>
-      <div className="mt-6 flex gap-4 text-xs text-muted">
+      <div className="seat-row mt-4 w-full max-w-[380px]" aria-hidden />
+      <div className="seat-row mt-1.5 w-full max-w-[440px] opacity-60" aria-hidden />
+
+      <div className="mt-10 flex gap-5 text-sm text-muted">
         <Link href="/admin/login" className="hover:text-text">Staff sign in</Link>
-        <a href="https://praneet-admin.github.io/plotopia/" target="_blank" rel="noreferrer" className="hover:text-text">Seat simulator ↗</a>
+        <a href="https://praneet-admin.github.io/plotopia/" target="_blank" rel="noreferrer" className="hover:text-text">Try the seat simulator</a>
       </div>
     </main>
   );

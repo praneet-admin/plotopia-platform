@@ -69,7 +69,7 @@ body {
 .input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(255,194,14,.18); }
 textarea.input { height: auto; padding: 10px 14px; }
 select.input { appearance: none; }
-.label { display: block; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
 .pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); }
 .kbd { font-family: var(--font-mono); font-size: 12px; background: var(--bg-2); border: 1px solid var(--line); padding: 2px 6px; border-radius: 6px; }
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -87,8 +87,28 @@ select.input { appearance: none; }
 .seat.recl { border-radius: 9px 9px 5px 5px; }
 .screen-glow { height: 6px; border-radius: 999px; background: linear-gradient(90deg, transparent, #ffe08a 20%, #fff 50%, #ffe08a 80%, transparent); box-shadow: 0 10px 40px rgba(255,194,14,.25), 0 0 80px rgba(255,194,14,.12); }
 
-.poster { aspect-ratio: 2/3; border-radius: 14px; overflow: hidden; position: relative; isolation: isolate; }
-.poster::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 80% at 20% 0%, rgba(255,255,255,.14), transparent 60%), linear-gradient(180deg, transparent 40%, rgba(0,0,0,.55)); }
+.poster { aspect-ratio: 2/3; border-radius: 10px; overflow: hidden; position: relative; isolation: isolate; box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 20px 40px -24px rgba(0,0,0,.9); }
+
+/* The projector: a cone of warm light from the top, used once per page. */
+.beam { position: absolute; left: 50%; top: 0; width: min(140vw, 1600px); height: 100%; transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(60% 90% at 50% 0%, rgba(255,226,140,.22), rgba(255,194,14,.06) 45%, transparent 70%);
+  mask: linear-gradient(180deg, #000 0%, #000 60%, transparent 100%); animation: beam-on 1.2s ease-out both; }
+@keyframes beam-on { from { opacity: 0; transform: translateX(-50%) scaleY(.6); } to { opacity: 1; transform: translateX(-50%) scaleY(1); } }
+.screen { position: relative; border-radius: 6px; background: #0a0a0c; box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 0 80px -10px rgba(255,226,140,.25), 0 40px 80px -40px rgba(0,0,0,.9); overflow: hidden; }
+.screen::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,240,200,.10), transparent 35%), repeating-linear-gradient(0deg, rgba(0,0,0,.08) 0 1px, transparent 1px 3px); pointer-events: none; }
+.seat-row { height: 10px; background: repeating-linear-gradient(90deg, #26262c 0 22px, transparent 22px 28px); border-radius: 3px 3px 0 0; mask: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); }
+.rail { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; scrollbar-width: none; }
+.rail::-webkit-scrollbar { display: none; }
+.rail > * { scroll-snap-align: start; flex: none; }
+.chip { display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; white-space: nowrap; transition: color .12s, border-color .12s, background .12s; }
+.chip:hover { color: var(--text); border-color: #3a3a41; }
+.chip.on { color: var(--ink); background: var(--brand); border-color: var(--brand); font-weight: 600; }
+.showtime { display: inline-flex; flex-direction: column; align-items: center; min-width: 88px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-2); font-variant-numeric: tabular-nums; transition: border-color .12s, background .12s; }
+.showtime:hover { border-color: var(--brand); }
+.showtime b { font-size: 15px; font-weight: 600; }
+.showtime small { font-size: 11px; }
+@media (prefers-reduced-motion: reduce) { .beam, .fade-up { animation: none !important; } .seat, .btn { transition: none; } }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .fade-up { animation: fade-up .35s ease both; }
