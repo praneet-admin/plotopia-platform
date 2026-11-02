@@ -105,6 +105,17 @@ function lcg(seed: number) {
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
 
+// Hosted databases drop the odd long request: insert in modest chunks and retry a failed chunk.
+async function insertChunked<T extends typeof schema.bookings | typeof schema.tickets | typeof schema.payments>(table: T, rows: T["$inferInsert"][], size = 100) {
+  for (let j = 0; j < rows.length; j += size) {
+    const chunk = rows.slice(j, j + size);
+    for (let attempt = 1; ; attempt++) {
+      try { await db.insert(table).values(chunk); break; }
+      catch (e) { if (attempt >= 5) throw e; console.warn(`chunk ${j} failed (attempt ${attempt}), retrying`); await new Promise((r) => setTimeout(r, 1500 * attempt)); }
+    }
+  }
+}
+
 async function main() {
   console.log("Wiping...");
   for (const t of [schema.payments, schema.tickets, schema.bookings, schema.seatHolds, schema.sessions, schema.shows, schema.seats, schema.screens, schema.movies, schema.customers, schema.staff, schema.pricingRules, schema.cinemas])
@@ -168,6 +179,10 @@ async function main() {
   // Bookings: past shows well filled, today partially, future tapering.
   const rnd = lcg(20261030);
   let nb = 0;
+  // Collect rows and insert in chunks: a hosted database is one round trip per statement.
+  const bookingRows: (typeof schema.bookings.$inferInsert)[] = [];
+  const ticketRows: (typeof schema.tickets.$inferInsert)[] = [];
+  const paymentRows: (typeof schema.payments.$inferInsert)[] = [];
   for (const show of showRows) {
     const daysOut = (show.startsAt - now) / 86_400_000;
     const target = daysOut < 0 ? 0.55 + rnd() * 0.3 : daysOut < 1 ? 0.25 + rnd() * 0.3 : Math.max(0.03, 0.22 - daysOut * 0.035);
@@ -192,15 +207,18 @@ async function main() {
       const createdAt = Math.min(now - 60_000, show.startsAt - Math.floor(rnd() * 3 * 86_400_000) - 3_600_000);
       const cancelled = rnd() < 0.04;
       const bid = bookingCode();
-      await db.insert(schema.bookings).values({ id: bid, showId: show.id!, customerId: cust.id, holdGroup: null, status: cancelled ? "refunded" : "confirmed", channel: counter ? "counter" : "online", seatLabels: run.map((s) => s.label), subtotal, fee, total: subtotal + fee, refundAmount: cancelled ? subtotal + fee : 0, qrToken: token(18), createdAt, confirmedAt: createdAt + 90_000, cancelledAt: cancelled ? createdAt + 3_600_000 : null });
+      bookingRows.push({ id: bid, showId: show.id!, customerId: cust.id, holdGroup: null, status: cancelled ? "refunded" : "confirmed", channel: counter ? "counter" : "online", seatLabels: run.map((s) => s.label), subtotal, fee, total: subtotal + fee, refundAmount: cancelled ? subtotal + fee : 0, qrToken: token(18), createdAt, confirmedAt: createdAt + 90_000, cancelledAt: cancelled ? createdAt + 3_600_000 : null });
       const checkedIn = show.startsAt < now - 10 * 60_000 && !cancelled && rnd() < 0.9;
-      await db.insert(schema.tickets).values(run.map((s) => ({ id: uuid(), bookingId: bid, showId: show.id!, seatId: s.id, seatLabel: s.label, category: s.category, price: show.prices![s.category], active: !cancelled, checkedInAt: checkedIn ? show.startsAt - Math.floor(rnd() * 25 * 60_000) : null })));
-      await db.insert(schema.payments).values({ id: uuid(), bookingId: bid, idempotencyKey: `seed:${bid}`, amount: subtotal + fee, method: counter ? (rnd() < 0.5 ? "cash" : "card") : rnd() < 0.7 ? "upi" : "card", status: "succeeded", gatewayRef: `pay_${token(8)}`, createdAt: createdAt + 90_000 });
-      if (cancelled) await db.insert(schema.payments).values({ id: uuid(), bookingId: bid, idempotencyKey: `refund:${bid}`, amount: -(subtotal + fee), method: "refund", status: "refunded", gatewayRef: `rf_${token(8)}`, createdAt: createdAt + 3_600_000 });
+      ticketRows.push(...run.map((s) => ({ id: uuid(), bookingId: bid, showId: show.id!, seatId: s.id, seatLabel: s.label, category: s.category, price: show.prices![s.category], active: !cancelled, checkedInAt: checkedIn ? show.startsAt - Math.floor(rnd() * 25 * 60_000) : null })));
+      paymentRows.push({ id: uuid(), bookingId: bid, idempotencyKey: `seed:${bid}`, amount: subtotal + fee, method: counter ? (rnd() < 0.5 ? "cash" : "card") : rnd() < 0.7 ? "upi" : "card", status: "succeeded", gatewayRef: `pay_${token(8)}`, createdAt: createdAt + 90_000 });
+      if (cancelled) paymentRows.push({ id: uuid(), bookingId: bid, idempotencyKey: `refund:${bid}`, amount: -(subtotal + fee), method: "refund", status: "refunded", gatewayRef: `rf_${token(8)}`, createdAt: createdAt + 3_600_000 });
       placed += run.length;
       nb++;
     }
   }
+  await insertChunked(schema.bookings, bookingRows);
+  await insertChunked(schema.tickets, ticketRows);
+  await insertChunked(schema.payments, paymentRows);
   console.log(`${nb} bookings`);
   console.log("Staff logins: " + STAFF.map((s) => `${s.email} / ${s.password}`).join(", "));
 }

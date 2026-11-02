@@ -49,12 +49,12 @@ It fires 25 simultaneous holds for one seat over HTTP (exactly one wins), replay
 
 ## Deploy
 
-**Live demo**: https://plotopia-platform.vercel.app (Vercel project `plotopia-platform`). Without `DATABASE_URL` the serverless build copies `seed/show.db` to `/tmp` on each cold start, so bookings and holds are per instance and reset when it recycles: fine for a demo, not for sales. Set the Turso variables below for a real shared database.
+**Live demo**: https://plotopia-platform.vercel.app (Vercel project `plotopia-platform`) runs on a Turso database (`plotopia-platform`, aws-ap-northeast-1), so bookings and holds are shared and persist. Without `DATABASE_URL` the serverless build instead copies `seed/show.db` to `/tmp` on each cold start, which is per instance and resets when it recycles: fine for a throwaway demo, not for sales.
 
 
 **Vercel + Turso (recommended for a hosted demo)**
 
-1. `turso db create show-platform` then `turso db show show-platform --url` and `turso db tokens create show-platform`.
+1. `turso db create plotopia-platform` then `turso db show plotopia-platform --url` and `turso db tokens create plotopia-platform`.
 2. From this folder, push the schema and seed the hosted database:
    ```bash
    DATABASE_URL=libsql://… DATABASE_AUTH_TOKEN=… npm run db:reset
