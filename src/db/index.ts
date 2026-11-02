@@ -3,7 +3,25 @@ import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 import { mkdirSync } from "node:fs";
 
-const url = process.env.DATABASE_URL ?? "file:data/show.db";
+import { copyFileSync, existsSync } from "node:fs";
+import path from "node:path";
+
+function resolveUrl() {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  // Serverless demo fallback (no hosted database configured): copy the seeded
+  // SQLite file into the instance's writable temp dir on cold start. Bookings
+  // and holds then live per instance and reset when it recycles: demo-grade.
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const tmp = "/tmp/show.db";
+    if (!existsSync(tmp)) {
+      const seed = path.join(process.cwd(), "seed", "show.db");
+      if (existsSync(seed)) copyFileSync(seed, tmp);
+    }
+    return `file:${tmp}`;
+  }
+  return "file:data/show.db";
+}
+const url = resolveUrl();
 const authToken = process.env.DATABASE_AUTH_TOKEN;
 if (url.startsWith("file:")) { try { mkdirSync(url.slice(5).replace(/[^/]*$/, "") || ".", { recursive: true }); } catch {} }
 
