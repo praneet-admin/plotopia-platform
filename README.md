@@ -52,6 +52,27 @@ It fires 25 simultaneous holds for one seat over HTTP (exactly one wins), replay
 **Live demo**: https://plotopia-platform.vercel.app (Vercel project `plotopia-platform`) runs on a Turso database (`plotopia-platform`, aws-ap-northeast-1), so bookings and holds are shared and persist. Without `DATABASE_URL` the serverless build instead copies `seed/show.db` to `/tmp` on each cold start, which is per instance and resets when it recycles: fine for a throwaway demo, not for sales.
 
 
+## Everything is editable in the back office
+
+Sign in at `/admin` (demo logins are on the login page). Nothing the public site shows needs a code change:
+
+- **Settings → Brand**: site name, tagline, logo/wordmark/favicon (upload or URL), accent colour, footer text.
+- **Settings → Cinema**: city, support email/phone/WhatsApp, and the theatres list (name, address, phone, map link, hours).
+- **Settings → Home page**: heading, subheading, banner, promo strip, featured films and order, show/hide filters, "playing at", Theatres link, Coming soon row.
+- **Settings → Booking rules**: hold minutes, max seats, convenience fee, GST, close time, gate hours, refund windows and %, policy wording, online/counter toggles.
+- **Settings → Payment**: UPI ID and payee name (the QR encodes them), accepted apps, test mode, instructions.
+- **Settings → Messages**: confirmation, SMS, cancellation, refund lines and reminder templates with placeholders.
+- **Settings → Simulator**: simulator URL, hall screen image, "view from seat" links, cast in the header, screen → simulator hall mapping.
+- **Movies**: all fields incl. poster upload, trailer, formats, now showing / coming soon / hidden, delete and restore.
+- **Shows**: single or bulk scheduling (date range × times × weekdays), prices, reprice from rules, change film/format/time while unsold, cancel with refunds, delete/restore.
+- **Halls**: geometry, rows, bands, base prices, theatre, blocked seats, delete/restore. **Pricing**: base prices and editable rules.
+- **Customers**: search, edit, staff notes, block online booking. **Bookings**: cancel (policy / full / none), reseat, resend ticket, reminder, record a manual refund. **Staff**: roles and access.
+- **Activity**: every change above, who made it and the before/after values.
+
+Each settings tab has a live-preview link. Settings are cached for 3 seconds per server instance, so a change is live on the next page load.
+
+Schema changes are SQL migrations in `drizzle/` (`npx drizzle-kit generate`), applied with `npm run db:migrate` locally or with `DATABASE_URL`/`DATABASE_AUTH_TOKEN` set for Turso.
+
 **Vercel + Turso (recommended for a hosted demo)**
 
 1. `turso db create plotopia-platform` then `turso db show plotopia-platform --url` and `turso db tokens create plotopia-platform`.
