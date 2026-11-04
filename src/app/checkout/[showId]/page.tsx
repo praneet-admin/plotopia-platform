@@ -7,10 +7,11 @@ import { Countdown } from "@/components/Countdown";
 import { currentCustomer, customerLogin } from "@/lib/auth";
 import { BookingError, createPendingBooking } from "@/lib/booking";
 import { getCartGroup } from "@/lib/cart";
-import { CATEGORIES, simulatorLink } from "@/lib/hall";
+import { CATEGORIES } from "@/lib/hall";
 import { uuid } from "@/lib/ids";
 import { fmtDateTime, inr } from "@/lib/format";
-import { CONVENIENCE_FEE_PER_SEAT } from "@/lib/pricing";
+import { getSettings, policyText, ticketCharges } from "@/lib/settings";
+import { seatPreviewLink } from "@/lib/simulator";
 import { ExpiryRedirect } from "./expiry";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,11 @@ export default async function CheckoutPage({ params, searchParams }: { params: P
   if (!holds.length) redirect(`/book/${showId}?expired=1`);
   const seats = (await db.query.seats.findMany({ where: inArray(schema.seats.id, holds.map((h) => h.seatId)) })).sort((a, b) => a.rowIndex - b.rowIndex || a.num - b.num);
   const subtotal = seats.reduce((s, r) => s + (show.prices[r.category] ?? 0), 0);
-  const fee = CONVENIENCE_FEE_PER_SEAT * seats.length;
+  const { booking: rules } = await getSettings();
+  const charges = ticketCharges(rules, subtotal, seats.length, "online");
+  const fee = charges.fee;
+  const hall = show.screen.layout.simId ?? show.screen.id;
+  const previews = Object.fromEntries(await Promise.all(seats.map(async (s) => [s.id, await seatPreviewLink(hall, s.label)] as const)));
   const expiresAt = Math.min(...holds.map((h) => h.expiresAt));
   const customer = await currentCustomer();
 
@@ -94,14 +99,15 @@ export default async function CheckoutPage({ params, searchParams }: { params: P
               {seats.map((s) => (
                 <li key={s.id} className="flex items-center justify-between py-2">
                   <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: CATEGORIES[s.category]?.css }} />{s.label} <span className="text-muted">{CATEGORIES[s.category]?.name}</span>
-                    <a className="text-xs text-brand hover:underline" href={simulatorLink(show.screen.layout.simId ?? show.screen.id, s.label)} target="_blank" rel="noreferrer">view</a></span>
+                    {previews[s.id] && <a className="text-xs text-brand hover:underline" href={previews[s.id]!} target="_blank" rel="noreferrer">view</a>}</span>
                   <span className="num">{inr(show.prices[s.category] ?? 0)}</span>
                 </li>
               ))}
-              <li className="flex justify-between py-2 text-muted"><span>Convenience fee</span><span className="num">{inr(fee)}</span></li>
+              {charges.feeOnly > 0 && <li className="flex justify-between py-2 text-muted"><span>Convenience fee</span><span className="num">{inr(charges.feeOnly)}</span></li>}
+              {charges.gst > 0 && <li className="flex justify-between py-2 text-muted"><span>GST {rules.gstPct}%</span><span className="num">{inr(charges.gst)}</span></li>}
               <li className="flex justify-between py-2 text-base font-bold"><span>Total</span><span className="num">{inr(subtotal + fee)}</span></li>
             </ul>
-            <p className="mt-3 text-[11px] text-muted">Cancellation: full refund up to 24h before the show, 50% up to 2h before, none after that.</p>
+            <p className="mt-3 text-[11px] text-muted">Cancellation: {policyText(rules)}</p>
           </aside>
         </div>
       </main>

@@ -1,20 +1,20 @@
-import { and, asc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { dayStart } from "./format";
 
 export async function nowShowing() {
-  return db.query.movies.findMany({ where: eq(schema.movies.status, "now_showing"), orderBy: asc(schema.movies.releaseDate) });
+  return db.query.movies.findMany({ where: and(eq(schema.movies.status, "now_showing"), isNull(schema.movies.deletedAt)), orderBy: asc(schema.movies.releaseDate) });
 }
 
 /** Shows for a movie on a local day, with sold counts. */
 export async function showsForMovieOnDay(movieId: string, day: string) {
   const start = dayStart(day), end = start + 86_400_000;
   const rows = await db.query.shows.findMany({
-    where: and(eq(schema.shows.movieId, movieId), gte(schema.shows.startsAt, start), lt(schema.shows.startsAt, end), eq(schema.shows.status, "scheduled")),
+    where: and(eq(schema.shows.movieId, movieId), gte(schema.shows.startsAt, start), lt(schema.shows.startsAt, end), eq(schema.shows.status, "scheduled"), isNull(schema.shows.deletedAt)),
     with: { screen: true },
     orderBy: asc(schema.shows.startsAt),
   });
-  return attachSold(rows);
+  return attachSold(rows.filter((r) => !r.screen.deletedAt));
 }
 
 export async function attachSold<T extends { id: string }>(rows: T[]) {

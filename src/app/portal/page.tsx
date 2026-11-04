@@ -1,9 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
+import { Logo } from "@/components/Header";
+import { getSettings } from "@/lib/settings";
 import { currentCustomer, customerLogin } from "@/lib/auth";
 import { uuid } from "@/lib/ids";
 
@@ -45,14 +46,14 @@ export default async function Portal({ searchParams }: { searchParams: Promise<{
     redirect(dest);
   }
   const known = phone ? await db.query.customers.findFirst({ where: eq(schema.customers.phone, phone) }) : null;
+  const { brand } = await getSettings();
 
   return (
     <main className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 pb-16 pt-10 sm:pt-16">
       <div className="beam" aria-hidden />
       <div className="relative flex flex-col items-center text-center">
-        <Image src="/brand/mark.png" alt="" width={72} height={72} className="h-[72px] w-[72px] rounded-full" priority />
-        <Image src="/brand/wordmark-white.png" alt="Plotopia" width={220} height={67} className="mt-4 h-11 w-auto" priority />
-        <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-muted">Movie tickets across Chennai. Pick a seat and see the screen from it before you pay.</p>
+        <Logo size="lg" className="flex-col gap-4" />
+        <p className="mt-3 max-w-[34ch] text-[15px] leading-relaxed text-muted">{brand.description}</p>
       </div>
 
       <div className="screen relative mt-10 w-full max-w-[420px] p-6 sm:p-7">

@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { dayStart } from "./format";
 
@@ -11,14 +11,14 @@ export function genreTokens(movies: { genre: string }[]) {
 
 /** Movies now showing, optionally only those with a show at `cinemaId` on `day`, optionally in a genre / language. */
 export async function browseMovies(opts: { cinemaId?: string; genre?: string; language?: string; day: string }) {
-  let movies = await db.query.movies.findMany({ where: eq(schema.movies.status, "now_showing"), orderBy: asc(schema.movies.releaseDate) });
+  let movies = await db.query.movies.findMany({ where: and(eq(schema.movies.status, "now_showing"), isNull(schema.movies.deletedAt)), orderBy: asc(schema.movies.releaseDate) });
   const start = dayStart(opts.day), end = start + 86_400_000;
   // Which movies play where (on that day), for the theatre filter and the "playing at" labels.
   const shows = await db
     .select({ movieId: schema.shows.movieId, cinemaId: schema.screens.cinemaId })
     .from(schema.shows)
     .innerJoin(schema.screens, eq(schema.shows.screenId, schema.screens.id))
-    .where(and(gte(schema.shows.startsAt, start), lt(schema.shows.startsAt, end), eq(schema.shows.status, "scheduled"), inArray(schema.shows.movieId, movies.map((m) => m.id))));
+    .where(and(gte(schema.shows.startsAt, start), lt(schema.shows.startsAt, end), eq(schema.shows.status, "scheduled"), isNull(schema.shows.deletedAt), isNull(schema.screens.deletedAt), inArray(schema.shows.movieId, movies.map((m) => m.id))));
   const cinemasOf = new Map<string, Set<string>>();
   for (const s of shows) cinemasOf.set(s.movieId, (cinemasOf.get(s.movieId) ?? new Set()).add(s.cinemaId));
   if (opts.cinemaId) movies = movies.filter((m) => cinemasOf.get(m.id)?.has(opts.cinemaId!));
@@ -28,3 +28,5 @@ export async function browseMovies(opts: { cinemaId?: string; genre?: string; la
 }
 
 export const listCinemas = () => db.query.cinemas.findMany({ orderBy: asc(schema.cinemas.name) });
+
+export const comingSoon = () => db.query.movies.findMany({ where: and(eq(schema.movies.status, "coming_soon"), isNull(schema.movies.deletedAt)), orderBy: asc(schema.movies.releaseDate), limit: 8 });

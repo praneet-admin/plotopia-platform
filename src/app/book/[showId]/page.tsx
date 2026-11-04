@@ -10,5 +10,5 @@ export default async function BookRedirect({ params }: { params: Promise<{ showI
   const { showId } = await params;
   const show = await db.query.shows.findFirst({ where: eq(schema.shows.id, showId), with: { screen: true, movie: true } });
   if (!show) notFound();
-  redirect(simulatorShowLink(show, await siteOrigin()));
+  redirect(await simulatorShowLink(show, await siteOrigin()));
 }

@@ -6,6 +6,9 @@ export const cinemas = sqliteTable("cinemas", {
   name: text("name").notNull(),
   city: text("city").notNull(),
   address: text("address").notNull(),
+  phone: text("phone"),
+  mapUrl: text("map_url"),
+  hours: text("hours"),
 });
 
 /** A screen/auditorium. `layout` is the simulator's hall JSON (metres, rows, bands). */
@@ -16,6 +19,7 @@ export const screens = sqliteTable("screens", {
   layout: text("layout", { mode: "json" }).$type<HallLayout>().notNull(),
   seatCount: integer("seat_count").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
+  deletedAt: integer("deleted_at"),
 });
 
 export const seats = sqliteTable(
@@ -29,6 +33,7 @@ export const seats = sqliteTable(
     num: integer("num").notNull(),
     category: text("category").notNull(), // classic | prime | recliner
     aisleAfter: integer("aisle_after", { mode: "boolean" }).notNull().default(false),
+    blocked: integer("blocked", { mode: "boolean" }).notNull().default(false), // broken seat, wheelchair bay, etc.
   },
   (t) => [index("seats_screen").on(t.screenId)],
 );
@@ -48,7 +53,11 @@ export const movies = sqliteTable("movies", {
   accent: text("accent").notNull(), // poster colour
   accent2: text("accent2").notNull(),
   rating: real("rating").notNull().default(0),
-  status: text("status").notNull().default("now_showing"), // now_showing | coming_soon | archived
+  status: text("status").notNull().default("now_showing"), // now_showing | coming_soon | hidden
+  posterUrl: text("poster_url"), // https URL or data: URL uploaded in admin; null = file in public/covers or generated
+  trailerUrl: text("trailer_url"),
+  formats: text("formats", { mode: "json" }).$type<string[]>().notNull().default([]),
+  deletedAt: integer("deleted_at"),
 });
 
 export const shows = sqliteTable(
@@ -62,6 +71,7 @@ export const shows = sqliteTable(
     format: text("format").notNull().default("2D"),
     status: text("status").notNull().default("scheduled"), // scheduled | cancelled
     prices: text("prices", { mode: "json" }).$type<Record<string, number>>().notNull(),
+    deletedAt: integer("deleted_at"),
   },
   (t) => [index("shows_starts").on(t.startsAt), index("shows_screen").on(t.screenId, t.startsAt)],
 );
@@ -85,6 +95,8 @@ export const customers = sqliteTable("customers", {
   name: text("name").notNull(),
   email: text("email"),
   createdAt: integer("created_at").notNull(),
+  blocked: integer("blocked", { mode: "boolean" }).notNull().default(false),
+  notes: text("notes"),
 });
 
 export const bookings = sqliteTable(
@@ -237,3 +249,29 @@ export const notifications = sqliteTable("notifications", {
   bookingId: text("booking_id"),
   createdAt: integer("created_at").notNull(),
 });
+
+/** Site-wide configuration edited in /admin/settings: one JSON document per section. */
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(), // brand | cinema | home | booking | payment | messages | simulator
+  value: text("value", { mode: "json" }).$type<unknown>().notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+/** Who changed what in the back office. */
+export const activity = sqliteTable(
+  "activity",
+  {
+    id: text("id").primaryKey(),
+    staffId: text("staff_id"),
+    staffName: text("staff_name").notNull(),
+    action: text("action").notNull(), // create | update | delete | restore | cancel | refund | settings | ...
+    entity: text("entity").notNull(), // movie | show | hall | booking | customer | staff | pricing | settings
+    entityId: text("entity_id"),
+    summary: text("summary").notNull(),
+    diff: text("diff", { mode: "json" }).$type<Record<string, [unknown, unknown]> | null>(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("activity_created").on(t.createdAt)],
+);
+export type Activity = typeof activity.$inferSelect;

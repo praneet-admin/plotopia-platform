@@ -5,5 +5,5 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 : "${DATABASE_URL:?set DATABASE_URL to the Turso libsql:// URL}"
 : "${DATABASE_AUTH_TOKEN:?set DATABASE_AUTH_TOKEN (turso db tokens create <db>)}"
-npx drizzle-kit push --force
+npx tsx scripts/migrate.ts
 npx tsx scripts/seed.ts

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { inr } from "@/lib/format";
 
-export function PayForm({ action, idem, total, upiId, upiLink, gpayLink, qrSvg }: { action: (fd: FormData) => Promise<void>; idem: string; total: number; upiId: string; upiLink: string; gpayLink: string; qrSvg: string }) {
+export function PayForm({ action, idem, total, upiId, upiLink, gpayLink, qrSvg, apps, testMode }: { action: (fd: FormData) => Promise<void>; idem: string; total: number; upiId: string; upiLink: string; gpayLink: string; qrSvg: string; apps: string[]; testMode: boolean }) {
   const [copied, setCopied] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
   const gpay = () => {
@@ -29,7 +29,8 @@ export function PayForm({ action, idem, total, upiId, upiLink, gpayLink, qrSvg }
         <GLogo /> Pay with Google Pay
       </button>
       {hint && <p className="mt-2 text-center text-xs text-muted">{hint}</p>}
-      <Buttons total={total} />
+      {apps.length > 0 && <p className="mt-2 text-center text-[11px] text-muted">Works with {apps.join(", ")}</p>}
+      <Buttons total={total} testMode={testMode} />
     </form>
   );
 }
@@ -40,12 +41,12 @@ function GLogo() {
   );
 }
 
-function Buttons({ total }: { total: number }) {
+function Buttons({ total, testMode }: { total: number; testMode: boolean }) {
   const { pending } = useFormStatus();
   return (
     <div className="mt-4 flex flex-col gap-2">
       <button name="outcome" value="ok" className="btn btn-primary w-full" disabled={pending}>{pending ? "Confirming…" : `I've paid ${inr(total)}`}</button>
-      <button name="outcome" value="fail" className="btn btn-ghost btn-sm w-full" disabled={pending}>Payment didn&apos;t go through</button>
+      {testMode && <button name="outcome" value="fail" className="btn btn-ghost btn-sm w-full" disabled={pending}>Payment didn&apos;t go through</button>}
     </div>
   );
 }

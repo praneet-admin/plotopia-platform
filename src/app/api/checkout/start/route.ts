@@ -14,14 +14,14 @@ export async function GET(req: Request) {
   const seats = (u.searchParams.get("seat") ?? "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
   const show = await db.query.shows.findFirst({ where: eq(schema.shows.id, showId), with: { screen: true, movie: true } });
   if (!show) return NextResponse.redirect(new URL("/", u.origin));
-  if (!seats.length) return NextResponse.redirect(simulatorShowLink(show, u.origin));
+  if (!seats.length) return NextResponse.redirect(await simulatorShowLink(show, u.origin));
   const group = await ensureCartGroup(showId);
   try {
     await holdSeats(showId, seats.map((l) => `${show.screenId}:${l}`), group);
   } catch (e) {
     if (e instanceof BookingError) {
       // Seat went while they were looking: back to the hall with the reason in the hash.
-      return NextResponse.redirect(`${simulatorShowLink(show, u.origin)}&error=${encodeURIComponent(e.code)}`);
+      return NextResponse.redirect(`${await simulatorShowLink(show, u.origin)}&error=${encodeURIComponent(e.code)}`);
     }
     throw e;
   }

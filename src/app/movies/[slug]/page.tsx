@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { Footer, Header } from "@/components/Header";
 import { Poster } from "@/components/Poster";
@@ -15,13 +15,14 @@ export const dynamic = "force-dynamic";
 export default async function MoviePage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ day?: string; cinema?: string }> }) {
   const { slug } = await params;
   const { day: dayParam, cinema: cinemaParam } = await searchParams;
-  const movie = await db.query.movies.findFirst({ where: eq(schema.movies.slug, slug) });
-  if (!movie) notFound();
+  const movie = await db.query.movies.findFirst({ where: and(eq(schema.movies.slug, slug), isNull(schema.movies.deletedAt)) });
+  if (!movie || movie.status === "hidden" || movie.status === "archived") notFound();
   const today = dayKey(Date.now());
   const days = Array.from({ length: 7 }, (_, i) => dayKey(dayStart(today) + i * 86_400_000));
   const day = dayParam && days.includes(dayParam) ? dayParam : today;
   const origin = await siteOrigin();
   const allShows = await showsForMovieOnDay(movie.id, day);
+  const links = Object.fromEntries(await Promise.all(allShows.map(async (s) => [s.id, await simulatorShowLink({ ...s, movie }, origin)] as const)));
   const cinemas = await listCinemas();
   const cinemaIdsToday = [...new Set(allShows.map((s) => s.screen.cinemaId))];
   const cinema = cinemas.find((c) => c.id === cinemaParam);
@@ -45,7 +46,8 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
             <Poster movie={movie} className="w-[110px] flex-none sm:w-[160px]" size="sm" />
             <div className="min-w-0">
               <h1 className="text-[clamp(26px,4vw,40px)] font-extrabold leading-[1] tracking-[-0.03em]">{movie.title}</h1>
-              <p className="mt-2 text-sm text-muted">{movie.language} · {movie.certificate} · {runtime(movie.runtimeMin)} · {movie.genre}</p>
+              <p className="mt-2 text-sm text-muted">{movie.language} · {movie.certificate} · {runtime(movie.runtimeMin)} · {movie.genre}{movie.formats.length > 0 && <> · {movie.formats.join(", ")}</>}</p>
+              {movie.trailerUrl && <a href={movie.trailerUrl} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm mt-3">▶ Trailer</a>}
               <p className="mt-3 hidden max-w-[62ch] text-[15px] leading-relaxed text-text/90 sm:block">{movie.synopsis}</p>
               <p className="mt-2 hidden max-w-[62ch] text-sm text-muted sm:block">Directed by {movie.director}. With {movie.cast.join(", ")}.</p>
             </div>
@@ -56,6 +58,7 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
         <section id="showtimes" className="container-x mt-8 border-t border-line pt-6">
           <h2 className="text-xl font-bold tracking-tight">Showtimes</h2>
           <p className="mt-1 text-sm text-muted">Pick a day and a time. The time opens the 3D hall where you choose your seat.</p>
+          {movie.status === "coming_soon" && allShows.length === 0 && <p className="mt-2 text-sm">Releases {new Date(movie.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "long" })}. Bookings open soon.</p>}
           <div className="rail -mx-4 mt-3 px-4 sm:mx-0 sm:px-0" aria-label="Day">
             {days.map((d) => {
               const ms = dayStart(d);
@@ -99,7 +102,7 @@ export default async function MoviePage({ params, searchParams }: { params: Prom
                               const past = s.startsAt < now - 20 * 60_000;
                               const soldOut = s.sold >= screen.seatCount;
                               const inner = (<><b>{fmtTime(s.startsAt)}</b><small className={past || soldOut ? "" : tone.cls}>{past ? "Started" : soldOut ? "Sold out" : tone.label}</small></>);
-                              return past || soldOut ? <span key={s.id} className="showtime off" aria-disabled="true">{inner}</span> : <a key={s.id} href={simulatorShowLink({ ...s, movie }, origin)} className="showtime">{inner}</a>;
+                              return past || soldOut ? <span key={s.id} className="showtime off" aria-disabled="true">{inner}</span> : <a key={s.id} href={links[s.id]} className="showtime">{inner}</a>;
                             })}
                           </div>
                         </div>

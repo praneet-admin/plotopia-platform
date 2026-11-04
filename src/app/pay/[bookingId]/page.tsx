@@ -12,12 +12,12 @@ import { sendBookingConfirmation } from "@/lib/notify";
 import { bookingFull } from "@/lib/queries";
 import { ExpiryRedirect } from "../../checkout/[showId]/expiry";
 import QRCode from "qrcode";
+import { getSettings } from "@/lib/settings";
 import { PayForm } from "./pay-form";
 
-// Owner's UPI handle, same as the simulator's checkout (test mode).
-const UPI = { pa: process.env.UPI_ID ?? "nightriderpraneet@okaxis", pn: "Plotopia" };
-function upiLink(scheme: string, amount: number, note: string, ref: string) {
-  const q = new URLSearchParams({ pa: UPI.pa, pn: UPI.pn, am: amount.toFixed(2), cu: "INR", tn: note, tr: ref });
+/** UPI handle and payee name come from /admin/settings → Payment. */
+function upiLink(pay: { upiId: string; payeeName: string }, scheme: string, amount: number, note: string, ref: string) {
+  const q = new URLSearchParams({ pa: pay.upiId, pn: pay.payeeName, am: amount.toFixed(2), cu: "INR", tn: note, tr: ref });
   return `${scheme}?${q}`;
 }
 
@@ -28,6 +28,7 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   const { error } = await searchParams;
   const booking = await bookingFull(bookingId);
   if (!booking) notFound();
+  const { payment: pay } = await getSettings();
   if (booking.status === "confirmed") redirect(`/tickets/${booking.id}?t=${booking.qrToken}`);
   if (booking.status !== "pending") redirect(`/tickets/${booking.id}?t=${booking.qrToken}`);
   const holds = await db.query.seatHolds.findMany({ where: and(eq(schema.seatHolds.holdGroup, booking.holdGroup!), gt(schema.seatHolds.expiresAt, Date.now())) });
@@ -36,11 +37,11 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   const idem = token(12);
   const failed = booking.payments.filter((p) => p.status === "failed").length;
   const note = `${booking.show.movie.title} ${booking.seatLabels.join(",")}`.slice(0, 40);
-  const link = upiLink("upi://pay", booking.total, note, booking.id);
-  const gpay = upiLink("tez://upi/pay", booking.total, note, booking.id);
+  const link = upiLink(pay, "upi://pay", booking.total, note, booking.id);
+  const gpay = upiLink(pay, "tez://upi/pay", booking.total, note, booking.id);
   const qrSvg = await QRCode.toString(link, { type: "svg", margin: 0, color: { dark: "#1a1400", light: "#ffffff" }, errorCorrectionLevel: "M" });
 
-  async function pay(formData: FormData) {
+  async function settle(formData: FormData) {
     "use server";
     const key = String(formData.get("idem") ?? "");
     const method = String(formData.get("method") ?? "upi");
@@ -79,20 +80,21 @@ export default async function PayPage({ params, searchParams }: { params: Promis
         <div className="mx-auto mt-5 max-w-lg">
           <div className="panel overflow-hidden">
             <div className="flex items-center justify-between border-b border-line bg-panel-2 px-5 py-3">
-              <div className="flex items-center gap-2 text-sm font-semibold">Pay with UPI <span className="pill text-[10px]">TEST MODE</span></div>
+              <div className="flex items-center gap-2 text-sm font-semibold">{pay.title} {pay.testMode && <span className="pill text-[10px]">TEST MODE</span>}</div>
               <div className="text-xs text-muted">Ref {booking.id}</div>
             </div>
             <div className="px-5 py-4">
               <div className="flex items-baseline justify-between">
-                <div><div className="text-xs text-muted">Paying PVR Phoenix for</div><div className="font-semibold">{booking.show.movie.title}</div><div className="text-xs text-muted">{fmtDateTime(booking.show.startsAt)} · {booking.seatLabels.join(", ")}</div></div>
+                <div><div className="text-xs text-muted">Paying {pay.payeeName} for</div><div className="font-semibold">{booking.show.movie.title}</div><div className="text-xs text-muted">{fmtDateTime(booking.show.startsAt)} · {booking.seatLabels.join(", ")}</div></div>
                 <div className="num text-2xl font-bold">{inr(booking.total)}</div>
               </div>
               {error && <div className="mt-3 rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-red-200">{error}</div>}
               {failed > 0 && !error && <div className="mt-3 text-xs text-muted">{failed} failed attempt{failed > 1 ? "s" : ""} so far. Your seats are still held.</div>}
-              <PayForm action={pay} idem={idem} total={booking.total} upiId={UPI.pa} upiLink={link} gpayLink={gpay} qrSvg={qrSvg} />
+              {pay.instructions && <p className="mt-3 text-xs text-muted">{pay.instructions}</p>}
+              <PayForm action={settle} idem={idem} total={booking.total} upiId={pay.upiId} upiLink={link} gpayLink={gpay} qrSvg={qrSvg} apps={pay.apps} testMode={pay.testMode} />
             </div>
           </div>
-          <p className="mt-3 text-center text-[11px] text-muted">Test mode: there is no bank callback, so &quot;I&apos;ve paid&quot; is the confirmation. Confirmations are idempotent, so a double tap never books twice.</p>
+          {pay.testMode && pay.testModeNote && <p className="mt-3 text-center text-[11px] text-muted">{pay.testModeNote}</p>}
         </div>
       </main>
     </>

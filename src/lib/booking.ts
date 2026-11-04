@@ -1,11 +1,10 @@
 import { and, eq, gt, inArray, lt, ne, sql } from "drizzle-orm";
 import { db, errorText, isUniqueViolation, schema, writeTx } from "@/db";
 import { bookingCode, token, uuid } from "./ids";
-import { CONVENIENCE_FEE_PER_SEAT, refundFor } from "./pricing";
+import { getSection, refundPolicy, ticketCharges } from "./settings";
 
-export const HOLD_MINUTES = 8;
-export const HOLD_MS = HOLD_MINUTES * 60_000;
-export const MAX_SEATS_PER_BOOKING = 10;
+/** Hold timeout, seat limit and close-of-booking are all editable in /admin/settings → Booking rules. */
+export const bookingRules = () => getSection("booking");
 
 export class BookingError extends Error {
   constructor(message: string, public code: string, public seats: string[] = []) {
@@ -13,16 +12,18 @@ export class BookingError extends Error {
   }
 }
 
-/** Seat availability for a show: sold (active tickets) and held (unexpired holds, excluding `myGroup`). */
+/** Seat availability for a show: sold (active tickets), blocked seats, and held (unexpired holds, excluding `myGroup`). */
 export async function seatStatus(showId: string, myGroup?: string) {
   const now = Date.now();
-  const [sold, held] = await Promise.all([
+  const [sold, held, blocked] = await Promise.all([
     db.select({ seatId: schema.tickets.seatId }).from(schema.tickets).where(and(eq(schema.tickets.showId, showId), eq(schema.tickets.active, true))),
     db.select({ seatId: schema.seatHolds.seatId, holdGroup: schema.seatHolds.holdGroup, expiresAt: schema.seatHolds.expiresAt }).from(schema.seatHolds).where(and(eq(schema.seatHolds.showId, showId), gt(schema.seatHolds.expiresAt, now))),
+    db.select({ seatId: schema.seats.id }).from(schema.seats).innerJoin(schema.shows, eq(schema.shows.screenId, schema.seats.screenId)).where(and(eq(schema.shows.id, showId), eq(schema.seats.blocked, true))),
   ]);
   const mine = held.filter((h) => h.holdGroup === myGroup);
   return {
-    sold: sold.map((s) => s.seatId),
+    sold: [...sold.map((s) => s.seatId), ...blocked.map((b) => b.seatId)],
+    blocked: blocked.map((b) => b.seatId),
     held: held.filter((h) => h.holdGroup !== myGroup).map((h) => h.seatId),
     mine: mine.map((h) => h.seatId),
     myExpiresAt: mine.length ? Math.min(...mine.map((h) => h.expiresAt)) : null,
@@ -34,28 +35,32 @@ export async function seatStatus(showId: string, myGroup?: string) {
  * transaction so two carts racing for one seat serialise; the unique index on
  * (show, seat) is the final guard even if a second writer slipped through.
  */
-export async function holdSeats(showId: string, seatIds: string[], holdGroup: string) {
-  if (seatIds.length > MAX_SEATS_PER_BOOKING) throw new BookingError(`Max ${MAX_SEATS_PER_BOOKING} seats per booking`, "too_many");
+export async function holdSeats(showId: string, seatIds: string[], holdGroup: string, channel: "online" | "counter" = "online") {
+  const rules = await bookingRules();
+  if (seatIds.length > rules.maxSeats) throw new BookingError(`Max ${rules.maxSeats} seats per booking`, "too_many");
+  if (channel === "online" && !rules.allowOnline) throw new BookingError("Online booking is paused. Please buy at the counter.", "show_closed");
   const uniq = [...new Set(seatIds)];
   const now = Date.now();
   try {
     return await writeTx(async (tx) => {
         const show = await tx.query.shows.findFirst({ where: eq(schema.shows.id, showId) });
-        if (!show || show.status !== "scheduled") throw new BookingError("Show is not open for booking", "show_closed");
-        if (show.startsAt < now - 20 * 60_000) throw new BookingError("Booking for this show has closed", "show_closed");
+        if (!show || show.status !== "scheduled" || show.deletedAt) throw new BookingError("Show is not open for booking", "show_closed");
+        if (show.startsAt < now - rules.closeMinutesAfterStart * 60_000) throw new BookingError("Booking for this show has closed", "show_closed");
         // Clear anything stale for this show, and my own previous picks.
         await tx.delete(schema.seatHolds).where(and(eq(schema.seatHolds.showId, showId), lt(schema.seatHolds.expiresAt, now)));
         await tx.delete(schema.seatHolds).where(and(eq(schema.seatHolds.showId, showId), eq(schema.seatHolds.holdGroup, holdGroup)));
         if (uniq.length === 0) return { expiresAt: null as number | null, seats: [] as string[] };
-        const valid = await tx.select({ id: schema.seats.id }).from(schema.seats).where(and(eq(schema.seats.screenId, show.screenId), inArray(schema.seats.id, uniq)));
+        const valid = await tx.select({ id: schema.seats.id, blocked: schema.seats.blocked }).from(schema.seats).where(and(eq(schema.seats.screenId, show.screenId), inArray(schema.seats.id, uniq)));
         if (valid.length !== uniq.length) throw new BookingError("Unknown seat", "bad_seat");
+        const blocked = valid.filter((v) => v.blocked).map((v) => v.id);
+        if (blocked.length) throw new BookingError("That seat is not available", "taken", blocked);
         const [sold, held] = await Promise.all([
           tx.select({ seatId: schema.tickets.seatId }).from(schema.tickets).where(and(eq(schema.tickets.showId, showId), eq(schema.tickets.active, true), inArray(schema.tickets.seatId, uniq))),
           tx.select({ seatId: schema.seatHolds.seatId }).from(schema.seatHolds).where(and(eq(schema.seatHolds.showId, showId), inArray(schema.seatHolds.seatId, uniq), ne(schema.seatHolds.holdGroup, holdGroup))),
         ]);
         const taken = [...sold, ...held].map((s) => s.seatId);
         if (taken.length) throw new BookingError("Some seats were just taken", "taken", taken);
-        const expiresAt = now + HOLD_MS;
+        const expiresAt = now + rules.holdMinutes * 60_000;
         await tx.insert(schema.seatHolds).values(uniq.map((seatId) => ({ id: uuid(), showId, seatId, holdGroup, expiresAt, createdAt: now })));
         return { expiresAt, seats: uniq };
     });
@@ -71,7 +76,7 @@ export async function releaseHolds(holdGroup: string) {
 }
 
 export async function extendHold(holdGroup: string) {
-  const expiresAt = Date.now() + HOLD_MS;
+  const expiresAt = Date.now() + (await bookingRules()).holdMinutes * 60_000;
   await db.update(schema.seatHolds).set({ expiresAt }).where(and(eq(schema.seatHolds.holdGroup, holdGroup), gt(schema.seatHolds.expiresAt, Date.now())));
   return expiresAt;
 }
@@ -84,8 +89,12 @@ export async function createPendingBooking(opts: { showId: string; holdGroup: st
   const show = await db.query.shows.findFirst({ where: eq(schema.shows.id, opts.showId) });
   if (!show) throw new BookingError("Show not found", "show_closed");
   const seatRows = await db.query.seats.findMany({ where: inArray(schema.seats.id, holds.map((h) => h.seatId)) });
+  if (opts.customerId) {
+    const c = await db.query.customers.findFirst({ where: eq(schema.customers.id, opts.customerId) });
+    if (c?.blocked) throw new BookingError("This account can't book online. Please contact the cinema.", "blocked");
+  }
   const subtotal = seatRows.reduce((s, r) => s + (show.prices[r.category] ?? 0), 0);
-  const fee = opts.channel === "counter" ? 0 : CONVENIENCE_FEE_PER_SEAT * seatRows.length;
+  const { fee } = ticketCharges(await bookingRules(), subtotal, seatRows.length, opts.channel ?? "online");
   // Reuse an existing pending booking for this hold group (idempotent form resubmits).
   const existing = await db.query.bookings.findFirst({ where: and(eq(schema.bookings.holdGroup, opts.holdGroup), eq(schema.bookings.status, "pending")) });
   if (existing) return existing;
@@ -161,8 +170,9 @@ export async function settlePayment(opts: { bookingId: string; idempotencyKey: s
 }
 
 /** Cancel a confirmed booking under the refund policy; frees the seats. */
-export async function cancelBooking(bookingId: string, opts: { force?: boolean } = {}) {
+export async function cancelBooking(bookingId: string, opts: { force?: boolean; pct?: number } = {}) {
   const now = Date.now();
+  const rules = await bookingRules();
   return writeTx(async (tx) => {
       const booking = await tx.query.bookings.findFirst({ where: eq(schema.bookings.id, bookingId) });
       if (!booking) throw new BookingError("Booking not found", "not_found");
@@ -170,7 +180,7 @@ export async function cancelBooking(bookingId: string, opts: { force?: boolean }
       const show = (await tx.query.shows.findFirst({ where: eq(schema.shows.id, booking.showId) }))!;
       const checked = await tx.select({ n: sql<number>`count(*)` }).from(schema.tickets).where(and(eq(schema.tickets.bookingId, bookingId), sql`checked_in_at is not null`));
       if (checked[0].n > 0 && !opts.force) throw new BookingError("Tickets already used at the gate", "checked_in");
-      const refund = opts.force ? { pct: 100, amount: booking.total } : refundFor(booking.total, show.startsAt, now);
+      const refund = opts.pct !== undefined ? { pct: opts.pct, amount: Math.round((booking.total * opts.pct) / 100) } : opts.force ? { pct: 100, amount: booking.total } : refundPolicy(rules, booking.total, show.startsAt, now);
       await tx.update(schema.tickets).set({ active: false }).where(eq(schema.tickets.bookingId, bookingId));
       await tx.update(schema.bookings).set({ status: refund.amount > 0 ? "refunded" : "cancelled", cancelledAt: now, refundAmount: refund.amount }).where(eq(schema.bookings.id, bookingId));
       if (refund.amount > 0)
@@ -186,7 +196,8 @@ export async function checkIn(qrToken: string) {
   if (!booking) return { ok: false as const, reason: "Unknown ticket" };
   if (booking.status !== "confirmed") return { ok: false as const, reason: `Booking is ${booking.status}`, booking };
   const show = (await db.query.shows.findFirst({ where: eq(schema.shows.id, booking.showId), with: { movie: true, screen: true } }))!;
-  if (show.startsAt - now > 3 * 3_600_000) return { ok: false as const, reason: "Too early: gates open 3h before the show", booking, show };
+  const gate = (await bookingRules()).gateOpensHoursBefore;
+  if (show.startsAt - now > gate * 3_600_000) return { ok: false as const, reason: `Too early: gates open ${gate}h before the show`, booking, show };
   if (show.endsAt < now) return { ok: false as const, reason: "Show has already ended", booking, show };
   const tix = await db.query.tickets.findMany({ where: and(eq(schema.tickets.bookingId, booking.id), eq(schema.tickets.active, true)) });
   const already = tix.filter((t) => t.checkedInAt);

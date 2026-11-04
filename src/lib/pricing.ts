@@ -18,13 +18,3 @@ export function priceShow(base: Record<string, number>, rules: PricingRule[], st
   for (const [k, v] of Object.entries(base)) out[k] = Math.round((v * mult) / 10) * 10;
   return out;
 }
-
-export const CONVENIENCE_FEE_PER_SEAT = 30;
-
-/** Refund policy: full >24h before, 50% between 24h and 2h, none inside 2h. */
-export function refundFor(total: number, startsAt: number, now = Date.now()) {
-  const hrs = (startsAt - now) / 3_600_000;
-  if (hrs >= 24) return { pct: 100, amount: total };
-  if (hrs >= 2) return { pct: 50, amount: Math.round(total / 2) };
-  return { pct: 0, amount: 0 };
-}

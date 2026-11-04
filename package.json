@@ -9,8 +9,9 @@
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
-    "db:reset": "npm run db:push && npm run db:seed",
-    "test:race": "tsx scripts/race-test.ts"
+    "db:reset": "npm run db:migrate && npm run db:seed",
+    "test:race": "tsx scripts/race-test.ts",
+    "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",

@@ -15,6 +15,7 @@ export const NAV: { href: string; label: string; roles: Role[] }[] = [
   { href: "/admin/counter", label: "Counter", roles: ["admin", "manager", "boxoffice"] },
   { href: "/admin/scan", label: "Gate scan", roles: ["admin", "manager", "boxoffice", "usher"] },
   { href: "/admin/bookings", label: "Bookings", roles: ["admin", "manager", "boxoffice"] },
+  { href: "/admin/customers", label: "Customers", roles: ["admin", "manager", "boxoffice"] },
   { href: "/admin/shows", label: "Shows", roles: ["admin", "manager"] },
   { href: "/admin/movies", label: "Movies", roles: ["admin", "manager"] },
   { href: "/admin/halls", label: "Halls", roles: ["admin", "manager"] },
@@ -22,4 +23,6 @@ export const NAV: { href: string; label: string; roles: Role[] }[] = [
   { href: "/admin/reports", label: "Reports", roles: ["admin", "manager"] },
   { href: "/admin/messages", label: "Messages", roles: ["admin", "manager", "boxoffice"] },
   { href: "/admin/staff", label: "Staff", roles: ["admin"] },
+  { href: "/admin/settings", label: "Settings", roles: ["admin", "manager"] },
+  { href: "/admin/activity", label: "Activity", roles: ["admin", "manager"] },
 ];

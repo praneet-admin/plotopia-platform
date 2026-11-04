@@ -4,10 +4,11 @@ import QRCode from "qrcode";
 import { Footer, Header } from "@/components/Header";
 import { currentCustomer, currentStaff } from "@/lib/auth";
 import { BookingError, cancelBooking } from "@/lib/booking";
-import { CATEGORIES, simulatorLink } from "@/lib/hall";
+import { CATEGORIES } from "@/lib/hall";
 import { fmtDate, fmtTime, inr, runtime } from "@/lib/format";
 import { sendCancellation } from "@/lib/notify";
-import { refundFor } from "@/lib/pricing";
+import { getSettings, policyText, refundPolicy } from "@/lib/settings";
+import { seatPreviewLink } from "@/lib/simulator";
 import { bookingFull } from "@/lib/queries";
 import { eq } from "drizzle-orm";
 import { db, schema } from "@/db";
@@ -27,7 +28,10 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
 
   const qr = await QRCode.toString(`PLOTOPIA:${b.qrToken}`, { type: "svg", margin: 1, color: { dark: "#0b0d12", light: "#ffffff" }, errorCorrectionLevel: "M" });
   const now = Date.now();
-  const refund = refundFor(b.total, b.show.startsAt, now);
+  const { booking: rules, brand } = await getSettings();
+  const refund = refundPolicy(rules, b.total, b.show.startsAt, now);
+  const hall = b.show.screen.layout.simId ?? b.show.screen.id;
+  const previews = Object.fromEntries(await Promise.all(b.tickets.map(async (t) => [t.id, await seatPreviewLink(hall, t.seatLabel)] as const)));
   const checkedIn = b.tickets.some((t) => t.checkedInAt);
   const canCancel = b.status === "confirmed" && !checkedIn && b.show.startsAt > now;
   const notes = await db.query.notifications.findMany({ where: eq(schema.notifications.bookingId, b.id) });
@@ -63,7 +67,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
           <div className="overflow-hidden rounded-2xl bg-white text-[#0b0d12] shadow-2xl">
             <div className="p-5" style={{ background: `linear-gradient(135deg, ${b.show.movie.accent}, ${b.show.movie.accent2})` }}>
               <div className="flex items-start justify-between text-white">
-                <div><div className="text-xs font-semibold opacity-80">Plotopia e-ticket</div><div className="mt-1 text-2xl font-black leading-tight">{b.show.movie.title}</div><div className="text-sm opacity-90">{b.show.movie.language} · {b.show.movie.certificate} · {runtime(b.show.movie.runtimeMin)}</div></div>
+                <div><div className="text-xs font-semibold opacity-80">{brand.siteName} e-ticket</div><div className="mt-1 text-2xl font-black leading-tight">{b.show.movie.title}</div><div className="text-sm opacity-90">{b.show.movie.language} · {b.show.movie.certificate} · {runtime(b.show.movie.runtimeMin)}</div></div>
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${b.status === "confirmed" ? "bg-white/20" : "bg-black/40"}`}>{b.status}</span>
               </div>
             </div>
@@ -73,11 +77,11 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
               <div><div className="text-[10px] font-bold uppercase text-gray-500">Screen</div><div className="font-semibold">{b.show.screen.name.split(" ·")[0]}</div></div>
               <div className="col-span-3"><div className="text-[10px] font-bold uppercase text-gray-500">Seats</div>
                 <div className="mt-1 flex flex-wrap gap-1.5">
-                  {b.tickets.map((t) => (
-                    <a key={t.id} href={simulatorLink(b.show.screen.layout.simId ?? b.show.screen.id, t.seatLabel)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-sm font-semibold hover:border-gray-400" title="See the view from this seat">
-                      <span className="h-2 w-2 rounded-sm" style={{ background: CATEGORIES[t.category]?.css }} />{t.seatLabel}{t.checkedInAt && <span className="text-[10px] text-green-600">✓ in</span>}
-                    </a>
-                  ))}
+                  {b.tickets.map((t) => {
+                    const inner = <><span className="h-2 w-2 rounded-sm" style={{ background: CATEGORIES[t.category]?.css }} />{t.seatLabel}{t.checkedInAt && <span className="text-[10px] text-green-600">✓ in</span>}</>;
+                    const cls = "inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-sm font-semibold";
+                    return previews[t.id] ? <a key={t.id} href={previews[t.id]!} target="_blank" rel="noreferrer" className={`${cls} hover:border-gray-400`} title="See the view from this seat">{inner}</a> : <span key={t.id} className={cls}>{inner}</span>;
+                  })}
                 </div>
               </div>
               <div className="col-span-3 text-xs text-gray-500">{b.show.screen.cinema.name}, {b.show.screen.cinema.address}</div>
@@ -94,7 +98,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
                 <div className="mt-2 text-xs text-gray-500">Paid <span className="font-semibold text-[#0b0d12]">{inr(b.total)}</span> {b.channel === "counter" ? "at the counter" : "online"}{b.refundAmount > 0 ? ` · refunded ${inr(b.refundAmount)}` : ""}</div>
               </div>
             </div>
-            <div className="bg-gray-50 px-5 py-3 text-[11px] text-gray-500">Show this QR at the gate. Gates open 3 hours before the show. Carry a valid ID for A-rated films.</div>
+            <div className="bg-gray-50 px-5 py-3 text-[11px] text-gray-500">Show this QR at the gate. Gates open {rules.gateOpensHoursBefore} hours before the show. Carry a valid ID for A-rated films.</div>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -107,7 +111,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
           {canCancel && (
             <form action={cancel} className="panel mt-5 p-4">
               <div className="text-sm font-semibold">Can&apos;t make it?</div>
-              <p className="mt-1 text-xs text-muted">Cancelling now refunds <span className="text-text">{inr(refund.amount)}</span> ({refund.pct}% of {inr(b.total)}). Full refund up to 24h before, 50% up to 2h before, none after.</p>
+              <p className="mt-1 text-xs text-muted">Cancelling now refunds <span className="text-text">{inr(refund.amount)}</span> ({refund.pct}% of {inr(b.total)}). {policyText(rules)}</p>
               <button className="btn btn-danger btn-sm mt-3">Cancel booking</button>
             </form>
           )}

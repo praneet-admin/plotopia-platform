@@ -14,7 +14,7 @@ export function TheatreSelect({ id, cinemas, value, params }: { id: string; cine
         router.push(p.toString() ? `/?${p}` : "/");
       }}
     >
-      <option value="">All theatres in Chennai</option>
+      <option value="">All theatres</option>
       {cinemas.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
     </select>
   );
