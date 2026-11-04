@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { dayKey, dayStart } from "./format";
 
@@ -22,9 +22,9 @@ export async function dailyCollections(from: string, to: string): Promise<DayRow
 }
 
 /** Every show on a day with sold seats, revenue and check-ins. */
-export async function showsOnDay(day: string) {
+export async function showsOnDay(day: string, includeDeleted = false) {
   const start = dayStart(day), end = start + 86_400_000;
-  const list = await db.query.shows.findMany({ where: and(gte(schema.shows.startsAt, start), lt(schema.shows.startsAt, end)), with: { movie: true, screen: true }, orderBy: asc(schema.shows.startsAt) });
+  const list = await db.query.shows.findMany({ where: and(gte(schema.shows.startsAt, start), lt(schema.shows.startsAt, end), includeDeleted ? undefined : isNull(schema.shows.deletedAt)), with: { movie: true, screen: true }, orderBy: asc(schema.shows.startsAt) });
   if (!list.length) return [];
   const agg = await db.select({ showId: schema.tickets.showId, sold: sql<number>`count(*)`, revenue: sql<number>`coalesce(sum(price),0)`, checkedIn: sql<number>`sum(case when checked_in_at is not null then 1 else 0 end)` })
     .from(schema.tickets).where(and(inArray(schema.tickets.showId, list.map((s) => s.id)), eq(schema.tickets.active, true))).groupBy(schema.tickets.showId);
@@ -37,6 +37,6 @@ export async function movieTotals(from: string, to: string) {
   return db.select({ movieId: schema.shows.movieId, title: schema.movies.title, shows: sql<number>`count(distinct ${schema.shows.id})`, sold: sql<number>`count(${schema.tickets.id})`, revenue: sql<number>`coalesce(sum(${schema.tickets.price}),0)` })
     .from(schema.shows).innerJoin(schema.movies, eq(schema.shows.movieId, schema.movies.id))
     .leftJoin(schema.tickets, and(eq(schema.tickets.showId, schema.shows.id), eq(schema.tickets.active, true)))
-    .where(and(gte(schema.shows.startsAt, start), lt(schema.shows.startsAt, end), eq(schema.shows.status, "scheduled")))
+    .where(and(gte(schema.shows.startsAt, start), lt(schema.shows.startsAt, end), eq(schema.shows.status, "scheduled"), isNull(schema.shows.deletedAt)))
     .groupBy(schema.shows.movieId, schema.movies.title).then((rows) => rows.sort((a, b) => b.revenue - a.revenue));
 }

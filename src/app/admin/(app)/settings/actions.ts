@@ -5,17 +5,8 @@ import { db, schema } from "@/db";
 import { requireStaff } from "@/lib/admin";
 import { diffOf, logActivity } from "@/lib/activity";
 import { DEFAULTS, saveSection, SECTIONS, type SectionKey } from "@/lib/settings";
+import { fileToDataUrl } from "@/lib/upload";
 import { FIELDS } from "./fields";
-
-const MAX_UPLOAD = 400 * 1024;
-
-async function fileToDataUrl(f: FormDataEntryValue | null): Promise<string | null> {
-  if (!(f instanceof File) || f.size === 0) return null;
-  if (f.size > MAX_UPLOAD) throw new Error(`${f.name} is ${Math.round(f.size / 1024)} KB; the limit is ${MAX_UPLOAD / 1024} KB. Resize it or paste a URL instead.`);
-  if (!/^image\/(png|jpeg|webp|svg\+xml|gif|x-icon)$/.test(f.type)) throw new Error("Upload a PNG, JPEG, WebP, SVG or GIF.");
-  const buf = Buffer.from(await f.arrayBuffer());
-  return `data:${f.type};base64,${buf.toString("base64")}`;
-}
 
 /** Parse a tab's form against its field spec; unknown keys are ignored. */
 export async function saveSettings(tab: string, fd: FormData) {
@@ -30,7 +21,7 @@ export async function saveSettings(tab: string, fd: FormData) {
         case "bool": patch[f.key] = fd.get(f.key) === "on"; break;
         case "number": { const n = Number(raw); if (!Number.isFinite(n)) throw new Error(`${f.label} must be a number`); patch[f.key] = Math.min(f.max ?? Infinity, Math.max(f.min ?? -Infinity, n)); break; }
         case "list": patch[f.key] = String(raw ?? "").split(/\r?\n|,/).map((s) => s.trim()).filter(Boolean); break;
-        case "image": { const up = await fileToDataUrl(fd.get(`${f.key}_file`)); patch[f.key] = fd.get(`${f.key}_clear`) === "on" ? "" : up ?? String(raw ?? "").trim(); break; }
+        case "image": { const up = await fileToDataUrl(fd.get(`${f.key}_file`), 400 * 1024); patch[f.key] = fd.get(`${f.key}_clear`) === "on" ? "" : up ?? String(raw ?? "").trim(); break; }
         case "color": { const v = String(raw ?? "").trim(); if (!/^#[0-9a-f]{6}$/i.test(v)) throw new Error(`${f.label} must be a hex colour like #ffc20e`); patch[f.key] = v.toLowerCase(); break; }
         case "featured": {
           const entries = [...fd.entries()].filter(([k]) => k.startsWith("featured_")).map(([k, v]) => [k.slice(9), Number(v)] as const).filter(([, n]) => Number.isFinite(n) && n > 0);

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireStaff } from "@/lib/admin";
+import { logActivity } from "@/lib/activity";
 import { hashPassword, ROLES } from "@/lib/auth";
 import { uuid } from "@/lib/ids";
 
@@ -11,11 +12,13 @@ export default async function StaffAdmin({ searchParams }: { searchParams: Promi
   const list = await db.query.staff.findMany({ orderBy: asc(schema.staff.createdAt) });
   async function add(fd: FormData) {
     "use server";
-    await requireStaff("admin");
+    const admin = await requireStaff("admin");
     const email = String(fd.get("email") ?? "").trim().toLowerCase(), name = String(fd.get("name") ?? "").trim(), role = String(fd.get("role") ?? "boxoffice"), pw = String(fd.get("password") ?? "");
     if (!email.includes("@") || !name || pw.length < 6 || !ROLES.includes(role as never)) redirect("/admin/staff?msg=Check+the+fields+(password+6%2B+chars)");
     if (await db.query.staff.findFirst({ where: eq(schema.staff.email, email) })) redirect("/admin/staff?msg=Email+already+exists");
-    await db.insert(schema.staff).values({ id: uuid(), email, name, role, passwordHash: hashPassword(pw), createdAt: Date.now() });
+    const id = uuid();
+    await db.insert(schema.staff).values({ id, email, name, role, passwordHash: hashPassword(pw), createdAt: Date.now() });
+    await logActivity(admin, "create", "staff", id, `Staff ${name} (${email}) added as ${role}`);
     redirect(`/admin/staff?msg=${encodeURIComponent(name + " added")}`);
   }
   async function toggle(fd: FormData) {
@@ -24,7 +27,7 @@ export default async function StaffAdmin({ searchParams }: { searchParams: Promi
     const id = String(fd.get("id"));
     if (id === admin.id) redirect("/admin/staff?msg=You+can't+deactivate+yourself");
     const u = await db.query.staff.findFirst({ where: eq(schema.staff.id, id) });
-    if (u) await db.update(schema.staff).set({ active: !u.active }).where(eq(schema.staff.id, id));
+    if (u) { await db.update(schema.staff).set({ active: !u.active }).where(eq(schema.staff.id, id)); await logActivity(admin, "update", "staff", id, `Staff ${u.name} ${u.active ? "deactivated" : "reactivated"}`); }
     redirect("/admin/staff");
   }
   async function setRole(fd: FormData) {
@@ -32,7 +35,9 @@ export default async function StaffAdmin({ searchParams }: { searchParams: Promi
     const admin = await requireStaff("admin");
     const id = String(fd.get("id")), role = String(fd.get("role"));
     if (id === admin.id || !ROLES.includes(role as never)) redirect("/admin/staff?msg=Can't+change+your+own+role");
+    const u = await db.query.staff.findFirst({ where: eq(schema.staff.id, id) });
     await db.update(schema.staff).set({ role }).where(eq(schema.staff.id, id));
+    if (u) await logActivity(admin, "update", "staff", id, `Staff ${u.name} role: ${u.role} → ${role}`, { role: [u.role, role] });
     redirect("/admin/staff");
   }
   const desc: Record<string, string> = { admin: "Everything, including staff", manager: "Scheduling, pricing, halls, reports", boxoffice: "Counter sales, bookings, gate", usher: "Gate scanning only" };

@@ -1,7 +1,7 @@
 import type { Movie } from "@/db/schema";
 import { coverFor } from "@/lib/covers";
 
-type P = Pick<Movie, "id" | "title" | "accent" | "accent2" | "language" | "certificate">;
+type P = Pick<Movie, "id" | "title" | "accent" | "accent2" | "language" | "certificate"> & { posterUrl?: string | null };
 
 function hash(s: string) { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; }
 
@@ -16,7 +16,7 @@ export function Poster({ movie, className = "", size = "md", priority }: { movie
   const seed = (h >> 4) % 1000;
   const fs = size === "lg" ? "text-[clamp(28px,4vw,44px)]" : size === "sm" ? "text-[15px]" : "text-[clamp(17px,2vw,22px)]";
   const a = movie.accent, b = movie.accent2;
-  const cover = coverFor(movie.id);
+  const cover = movie.posterUrl || coverFor(movie.id);
   if (cover) {
     return (
       <div className={`poster ${className}`} style={{ background: a }}>

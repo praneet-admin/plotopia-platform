@@ -1,4 +1,3 @@
-import "server-only";
 import { desc } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { uuid } from "./ids";
